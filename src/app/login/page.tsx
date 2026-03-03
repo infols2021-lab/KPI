@@ -1,19 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import ThemeToggle from "@/components/ThemeToggle";
 
 function safeNextPath(next: string | null) {
   if (!next) return null;
-  // только внутренние пути
   if (!next.startsWith("/")) return null;
   if (next.startsWith("//")) return null;
   return next;
 }
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
   const search = useSearchParams();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -96,6 +97,7 @@ export default function LoginPage() {
         </form>
 
         <button
+          type="button"
           className="mt-4 text-sm underline opacity-80"
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
         >
@@ -107,5 +109,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
   );
 }
