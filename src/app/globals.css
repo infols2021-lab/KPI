@@ -1,26 +1,212 @@
 @import "tailwindcss";
 
+/* =========================
+   TOKENS
+========================= */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: 246 248 255;
+  --fg: 10 18 34;
+  --card: 255 255 255;
+
+  --border: 175 192 220;
+  --muted: 66 84 112;
+
+  --accent: 99 102 241;  /* indigo */
+  --accent2: 34 211 238; /* cyan */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --bg: 8 10 16;
+  --fg: 244 244 245;
+  --card: 20 22 30;
+
+  --border: 58 62 74;
+  --muted: 170 175 190;
+
+  --accent: 129 140 248;
+  --accent2: 56 189 248;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ✅ 100% фикс нативных select/option в dark */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+html, body { height: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--fg));
+  background: rgb(var(--bg));
+
+  background-image:
+    radial-gradient(1200px 720px at 12% 10%, rgba(var(--accent2), 0.16), transparent 60%),
+    radial-gradient(900px 650px at 88% 18%, rgba(var(--accent), 0.14), transparent 60%),
+    radial-gradient(900px 700px at 40% 95%, rgba(34, 211, 238, 0.10), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), transparent 32%),
+    linear-gradient(to right, rgba(15,23,42,0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15,23,42,0.035) 1px, transparent 1px);
+  background-size: auto, auto, auto, auto, 44px 44px, 44px 44px;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+.dark body {
+  background-image:
+    radial-gradient(1200px 720px at 12% 10%, rgba(var(--accent2), 0.14), transparent 60%),
+    radial-gradient(900px 650px at 88% 18%, rgba(var(--accent), 0.12), transparent 60%),
+    radial-gradient(900px 700px at 40% 95%, rgba(34, 211, 238, 0.10), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), transparent 40%),
+    linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: auto, auto, auto, auto, 54px 54px, 54px 54px;
+}
+
+/* ===== border baseline ===== */
+.border { border-color: rgb(var(--border)); }
+
+/* ===== readability in light ===== */
+html:not(.dark) .opacity-70 { opacity: 0.92 !important; }
+html:not(.dark) .opacity-60 { opacity: 0.84 !important; }
+html:not(.dark) .opacity-80 { opacity: 0.95 !important; }
+
+/* =========================
+   SURFACES
+========================= */
+.bg-\[rgb\(var\(--card\)\)\]:not(.kpi-modal-surface) {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.dark .bg-\[rgb\(var\(--card\)\)\]:not(.kpi-modal-surface) {
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
+}
+
+/* =========================
+   INPUTS + SELECT
+========================= */
+input.bg-transparent,
+select.bg-transparent,
+textarea.bg-transparent {
+  background-color: rgba(255,255,255,0.86);
+  border-color: rgb(var(--border)) !important;
+  color: rgb(var(--fg));
+}
+.dark input.bg-transparent,
+.dark select.bg-transparent,
+.dark textarea.bg-transparent {
+  background-color: rgba(255,255,255,0.10);
+  border-color: rgba(var(--border), 0.95) !important;
+  color: rgb(var(--fg));
+}
+
+/* option colors fallback */
+select { color: rgb(var(--fg)); }
+select option { color: rgb(var(--fg)); background-color: rgb(var(--card)); }
+.dark select option { color: rgb(var(--fg)); background-color: rgb(var(--card)); }
+
+/* =========================
+   ✅ ЖЕЛЕЗОБЕТОН: ACTIVE/SELECTED В LIGHT
+   ВАЖНО: у тебя активные состояния почти везде = bg-black text-white
+   (месяц, тема, кнопки Сохранить/Создать)
+   -> делаем их ВСЕГДА яркими и заметными.
+========================= */
+html:not(.dark) :is(button, a).bg-black.text-white,
+html:not(.dark) button.bg-black.text-white,
+html:not(.dark) a.bg-black.text-white {
+  background: linear-gradient(135deg, rgba(var(--accent), 1), rgba(var(--accent2), 0.95)) !important;
+  color: #fff !important;
+  border-color: rgba(var(--accent), 0.48) !important;
+  box-shadow:
+    0 14px 32px rgba(var(--accent), 0.22),
+    0 0 0 1px rgba(var(--accent), 0.30) inset !important;
+}
+html:not(.dark) :is(button, a).bg-black.text-white:hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+html:not(.dark) :is(button, a).bg-black.text-white:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+/* ✅ чтобы выбранная тема была прям очевидной даже в маленьком переключателе */
+html:not(.dark) :is(button, a).bg-black.text-white {
+  border-radius: 12px !important;
+}
+
+/* =========================
+   ✅ OUTLINE BUTTONS В LIGHT
+   Чтобы обычные кнопки с border (и "Сохранить" если вдруг не bg-black)
+   никогда не исчезали на белом.
+========================= */
+html:not(.dark) :is(button, a).border:not(.bg-black) {
+  background: rgba(255,255,255,0.96) !important;
+  color: rgb(var(--fg)) !important;
+  border-color: rgb(var(--border)) !important;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.10) !important;
+}
+html:not(.dark) :is(button, a).border:not(.bg-black):hover {
+  background: rgba(var(--accent), 0.08) !important;
+  border-color: rgba(var(--accent), 0.40) !important;
+}
+
+/* dark outline мягче */
+.dark :is(button, a).border:not(.bg-black) {
+  background-color: rgba(255,255,255,0.04);
+}
+
+/* =========================
+   ✅ DISABLED В LIGHT: кнопка не должна "пропадать"
+   (у тебя disabled:opacity-60 — иногда выглядит как будто исчезла)
+========================= */
+html:not(.dark) button:disabled {
+  opacity: 1 !important;                 /* не даём “исчезнуть” */
+  filter: none !important;
+  transform: none !important;
+}
+html:not(.dark) button.bg-black.text-white:disabled {
+  background: rgba(15, 23, 42, 0.10) !important;  /* серый, но видимый */
+  color: rgba(var(--fg), 0.75) !important;
+  border: 1px solid rgba(var(--border), 1) !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   FOCUS
+========================= */
+:where(input, select, textarea, button, a):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(var(--accent), 0.20),
+    0 0 0 1px rgba(var(--accent), 0.35) inset;
+  border-color: rgba(var(--accent), 0.55) !important;
+}
+
+/* =========================
+   MODALS (opaque)
+========================= */
+.kpi-modal-root { animation: kpi-fade-in 150ms ease-out; }
+.kpi-modal-backdrop {
+  background:
+    radial-gradient(900px 600px at 20% 10%, rgba(var(--accent2), 0.22), transparent 60%),
+    radial-gradient(900px 600px at 80% 20%, rgba(var(--accent), 0.20), transparent 60%),
+    rgba(0,0,0,0.58);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.kpi-modal-surface {
+  background-color: rgb(var(--card)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: rgb(var(--border)) !important;
+  animation: kpi-pop-in 170ms ease-out;
+}
+.kpi-modal-surface::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(var(--accent),0.60), rgba(var(--accent2),0.60));
+}
+
+@keyframes kpi-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kpi-pop-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
