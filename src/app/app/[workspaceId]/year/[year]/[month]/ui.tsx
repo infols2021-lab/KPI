@@ -26,7 +26,8 @@ type Card = {
   difficulty_id: string | null; // ✅ можно везде
   quality_level_id: string | null; // ✅ только accepted
 
-  // optional meta (если есть в select / api)
+  // meta
+  created_at?: string | null;
   updated_at?: string | null;
   accepted_at?: string | null;
 };
@@ -102,6 +103,25 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
+function fmtMoscowDateTime(iso: string) {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "";
+  try {
+    const s = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: "Europe/Moscow",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(t));
+    return s.replace(",", "");
+  } catch {
+    return new Date(t).toLocaleString("ru-RU");
+  }
+}
+
 // ISO (из БД) -> значение для <input type="datetime-local">
 function isoToLocalInputValue(iso: string) {
   const d = new Date(iso);
@@ -117,7 +137,6 @@ function localInputValueToIso(value: string): string | null {
   const s = String(value || "").trim();
   if (!s) return null;
 
-  // expected: YYYY-MM-DDTHH:mm (без таймзоны) => трактуем как local time
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if (!m) return null;
 
@@ -185,16 +204,11 @@ function fmtDoneVsDeadline(deadlineIso: string, doneIso: string) {
 
   const delta = done - d; // >0 = поздно
   const absText = fmtDeltaParts(Math.abs(delta));
-  if (delta > 0) return { text: `сдано: +${absText}`, tone: "danger" as const }; // просрочено
-  if (delta < 0) return { text: `сдано: -${absText}`, tone: "success" as const }; // раньше
+  if (delta > 0) return { text: `сдано: +${absText}`, tone: "danger" as const };
+  if (delta < 0) return { text: `сдано: -${absText}`, tone: "success" as const };
   return { text: "сдано: ровно в дедлайн", tone: "muted" as const };
 }
 
-/**
- * Supabase Storage иногда ругается "Invalid key" если в пути/имени есть
- * странные символы (например кириллица, эмодзи, слэши и т.п.).
- * Делаем безопасное имя: только латиница/цифры/._-
- */
 function safeFileName(original: string) {
   const raw = String(original || "file").trim();
   const dot = raw.lastIndexOf(".");
@@ -209,8 +223,8 @@ function safeFileName(original: string) {
 
   const base = baseRaw
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "") // диакритика
-    .replace(/[^a-zA-Z0-9._-]+/g, "_") // всё остальное -> _
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 80);
@@ -258,9 +272,22 @@ function normCard(row: any): Card {
     project_id: String(row.project_id ?? ""),
     difficulty_id: row.difficulty_id ? String(row.difficulty_id) : null,
     quality_level_id: row.quality_level_id ? String(row.quality_level_id) : null,
+    created_at: row.created_at ? String(row.created_at) : null,
     updated_at: row.updated_at ? String(row.updated_at) : null,
     accepted_at: row.accepted_at ? String(row.accepted_at) : null,
   };
+}
+
+function dedupeCardsById(list: Card[]): Card[] {
+  const idsInOrder: string[] = [];
+  const map = new Map<string, Card>();
+  for (const c of list) {
+    const id = String((c as any)?.id ?? "");
+    if (!id) continue;
+    if (!map.has(id)) idsInOrder.push(id);
+    map.set(id, c);
+  }
+  return idsInOrder.map((id) => map.get(id)!).filter(Boolean);
 }
 
 export default function MonthView(props: {
@@ -278,7 +305,7 @@ export default function MonthView(props: {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
 
   const [columns, setColumns] = useState<Column[]>(props.columns);
-  const [cards, setCards] = useState<Card[]>(props.cards);
+  const [cards, setCards] = useState<Card[]>(dedupeCardsById((props.cards ?? []).map(normCard)));
 
   const [overlay, setOverlay] = useState<OverlayState>({ open: false });
 
@@ -292,7 +319,6 @@ export default function MonthView(props: {
     setOverlay({ open: false });
   }
 
-  // keep horizontal scroll after actions / realtime changes
   const lanesRef = useRef<HTMLDivElement | null>(null);
   function keepScrollX<T>(fn: () => T): T {
     const x = lanesRef.current?.scrollLeft ?? 0;
@@ -303,7 +329,6 @@ export default function MonthView(props: {
     return out;
   }
 
-  // ✅ REALTIME: cards + board_columns (для текущей доски)
   useEffect(() => {
     const ch = supabase
       .channel(`rt-board:${props.boardId}`)
@@ -315,10 +340,20 @@ export default function MonthView(props: {
 
           if (t === "INSERT") {
             const c = normCard(payload.new);
-            keepScrollX(() => setCards((prev) => (prev.some((x) => x.id === c.id) ? prev : [...prev, c])));
+            keepScrollX(() =>
+              setCards((prev) => {
+                if (prev.some((x) => x.id === c.id)) return prev;
+                return dedupeCardsById([...prev, c]);
+              })
+            );
           } else if (t === "UPDATE") {
             const c = normCard(payload.new);
-            keepScrollX(() => setCards((prev) => prev.map((x) => (x.id === c.id ? { ...x, ...c } : x))));
+            keepScrollX(() =>
+              setCards((prev) => {
+                const next = prev.map((x) => (x.id === c.id ? { ...x, ...c } : x));
+                return dedupeCardsById(next);
+              })
+            );
           } else if (t === "DELETE") {
             const id = String(payload.old?.id ?? "");
             if (!id) return;
@@ -370,6 +405,12 @@ export default function MonthView(props: {
     [columns]
   );
 
+  // ✅ дедлайн “замораживается” и в accepted, и в done
+  const freezeColumnIds = useMemo(
+    () => new Set(columns.filter((c) => c.system_key === "accepted" || c.system_key === "done").map((c) => c.id)),
+    [columns]
+  );
+
   const stats = useMemo(() => {
     const totalTasks = cards.length;
     const acceptedCards = cards.filter((c) => acceptedColumnIds.has(c.column_id));
@@ -383,7 +424,6 @@ export default function MonthView(props: {
     return { totalTasks, totalPoints, avgQuality, salary };
   }, [cards, acceptedColumnIds, diffMap, qualMap, props.pointPrice]);
 
-  // ===== Column menu
   const [colMenu, setColMenu] = useState<null | { colId: string; x: number; y: number }>(null);
 
   function openColumnMenu(colId: string, btn: HTMLButtonElement) {
@@ -503,9 +543,11 @@ export default function MonthView(props: {
           const aPos = a.position;
           const bPos = b.position;
 
-          return prev.map((x) =>
+          const next = prev.map((x) =>
             x.id === a.id ? { ...x, position: bPos } : x.id === b.id ? { ...x, position: aPos } : x
           );
+
+          return dedupeCardsById(next);
         })
       );
 
@@ -515,7 +557,6 @@ export default function MonthView(props: {
     }
   }
 
-  // ===== Card modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [creatingColumnId, setCreatingColumnId] = useState<string | null>(null);
@@ -533,10 +574,21 @@ export default function MonthView(props: {
   }
 
   function onCardCreated(newCard: Card) {
-    keepScrollX(() => setCards((p) => [...p, newCard]));
+    const c = normCard(newCard as any);
+    keepScrollX(() =>
+      setCards((p) => {
+        if (p.some((x) => x.id === c.id)) return p;
+        return dedupeCardsById([...p, c]);
+      })
+    );
   }
   function onCardUpdated(patch: Partial<Card> & { id: string }) {
-    keepScrollX(() => setCards((prev) => prev.map((c) => (c.id === patch.id ? ({ ...c, ...patch } as any) : c))));
+    keepScrollX(() =>
+      setCards((prev) => {
+        const next = prev.map((c) => (c.id === patch.id ? ({ ...c, ...patch } as any) : c));
+        return dedupeCardsById(next);
+      })
+    );
   }
   function onCardDeleted(id: string) {
     keepScrollX(() => setCards((p) => p.filter((c) => c.id !== id)));
@@ -621,21 +673,23 @@ export default function MonthView(props: {
                     const proj = projectMap[c.project_id ?? ""];
                     const showTimer = c.timer_running || c.timer_total_seconds > 0;
 
-                    const isAcceptedLane = acceptedColumnIds.has(c.column_id);
+                    const isFreezeLane = freezeColumnIds.has(c.column_id);
                     const doneIso = c.accepted_at || c.updated_at || null;
+
                     const deadlineBadge =
-                      c.deadline && isAcceptedLane && doneIso
+                      c.deadline && isFreezeLane && doneIso
                         ? fmtDoneVsDeadline(c.deadline, doneIso)
                         : c.deadline
                         ? fmtTimeLeft(c.deadline)
                         : null;
+
+                    const createdLine = c.created_at ? fmtMoscowDateTime(c.created_at) : "";
 
                     return (
                       <div key={c.id} className="rounded-xl border p-3 hover:bg-black/5 dark:hover:bg-white/10">
                         <button className="w-full text-left" onClick={() => openExistingCard(c.id)}>
                           <div className="font-semibold">{c.title}</div>
 
-                          {/* ✅ компактная раскладка: проект -> сложность -> часы/дедлайн */}
                           <div className="mt-2 text-xs opacity-90 space-y-1">
                             {!!proj?.name && (
                               <div className="min-w-0">
@@ -676,12 +730,12 @@ export default function MonthView(props: {
                                 )}
 
                                 {showTimer && (
-                                  <span className="rounded-full border px-2 py-0.5">
-                                    ⏱ {fmtSeconds(c.timer_total_seconds)}
-                                  </span>
+                                  <span className="rounded-full border px-2 py-0.5">⏱ {fmtSeconds(c.timer_total_seconds)}</span>
                                 )}
                               </div>
                             )}
+
+                            {createdLine && <div className="text-xs opacity-70 truncate">🕒 Создано: {createdLine}</div>}
                           </div>
                         </button>
 
@@ -827,11 +881,13 @@ function CardModal(props: {
 
   const [title, setTitle] = useState("");
   const [projectId, setProjectId] = useState("");
-  const [difficultyId, setDifficultyId] = useState<string>(""); // ✅ можно везде
-  const [qualityLevelId, setQualityLevelId] = useState<string>(""); // ✅ только accepted
+  const [difficultyId, setDifficultyId] = useState<string>("");
+  const [qualityLevelId, setQualityLevelId] = useState<string>("");
 
   const [deadline, setDeadline] = useState<string>("");
   const [acceptedDoneIso, setAcceptedDoneIso] = useState<string | null>(null);
+
+  const [createdAtIso, setCreatedAtIso] = useState<string | null>(null);
 
   const [timerTotal, setTimerTotal] = useState<number>(0);
 
@@ -858,9 +914,14 @@ function CardModal(props: {
     () => new Set(props.columns.filter((c) => c.system_key === "accepted").map((c) => c.id)),
     [props.columns]
   );
-  const isAccepted = acceptedColIds.has(columnId);
+  const freezeColIds = useMemo(
+    () => new Set(props.columns.filter((c) => c.system_key === "accepted" || c.system_key === "done").map((c) => c.id)),
+    [props.columns]
+  );
 
-  // ✅ качество только в accepted
+  const isAccepted = acceptedColIds.has(columnId);
+  const isFreezeLane = freezeColIds.has(columnId);
+
   useEffect(() => {
     if (!isAccepted) {
       if (qualityLevelId) setQualityLevelId("");
@@ -871,6 +932,7 @@ function CardModal(props: {
   }, [isAccepted]);
 
   const openKeyRef = useRef<string>("");
+  const opLockRef = useRef(false);
 
   function publicUrl(bucket: string, path: string) {
     return props.supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
@@ -883,6 +945,7 @@ function CardModal(props: {
     }
     if (s.includes("Invalid difficulty_id")) return "Сложность не подходит для этого года. Выбери другую.";
     if (s.includes("Invalid quality_level_id")) return "Качество не подходит для этого года. Выбери другое.";
+    if (s.includes("Invalid deadline")) return "Дедлайн некорректный. Попробуй выбрать дату заново.";
     if (s.includes("Unauthorized")) return "Сессия истекла. Перезайди и попробуй снова.";
     if (s.includes("Invalid key"))
       return "Имя файла/путь содержит запрещённые символы. Переименуй файл (латиница) или загрузи заново.";
@@ -942,14 +1005,12 @@ function CardModal(props: {
     return true;
   }
 
-  // ✅ удаляем фото полностью: blocks (все, что ссылаются) + row в card_attachments + файл из storage
   async function deleteAttachmentFully(attachmentId: string, opts?: { skipConfirm?: boolean }) {
     if (!cardId) return;
 
     const att =
       attachments.find((a) => a.id === attachmentId) ||
-      blocks.find((b) => b.type === "attachment" && String(b.payload?.attachmentId ?? "") === attachmentId)
-        ?.attachment ||
+      blocks.find((b) => b.type === "attachment" && String(b.payload?.attachmentId ?? "") === attachmentId)?.attachment ||
       null;
 
     if (!opts?.skipConfirm) {
@@ -961,7 +1022,6 @@ function CardModal(props: {
 
     showLoading("Удаляю фото", "Пожалуйста, подожди...");
     try {
-      // 1) удалить все attachment-блоки, которые на него ссылаются
       const { data: allAttBlocks, error: blkErr } = await props.supabase
         .from("card_blocks")
         .select("id, payload, type")
@@ -980,7 +1040,6 @@ function CardModal(props: {
         await fetchJson(`/api/cards/blocks?id=${bid}`, { method: "DELETE" });
       }
 
-      // 2) удалить запись attachment из БД
       const { error: delDbErr } = await props.supabase
         .from("card_attachments")
         .delete()
@@ -990,7 +1049,6 @@ function CardModal(props: {
 
       if (delDbErr) throw new Error(delDbErr.message);
 
-      // 3) удалить файл из storage (best effort)
       if (att?.bucket && att?.path) {
         const rm = await props.supabase.storage.from(att.bucket).remove([att.path]);
         if (rm.error) {
@@ -998,7 +1056,6 @@ function CardModal(props: {
         }
       }
 
-      // 4) локально убрать
       setBlocks((prev) =>
         prev.filter((b) => !(b.type === "attachment" && String(b.payload?.attachmentId ?? "") === String(attachmentId)))
       );
@@ -1011,7 +1068,6 @@ function CardModal(props: {
   }
 
   async function cleanupStaleAttachmentBlocks(currentBlocks: CardBlock[]) {
-    // “битые” attachment-блоки: payload.attachmentId есть, а attachment=null
     const stale = currentBlocks
       .filter((b) => b.type === "attachment")
       .filter((b) => String(b.payload?.attachmentId ?? "").trim() && !b.attachment)
@@ -1045,7 +1101,8 @@ function CardModal(props: {
       setDifficultyId(card.difficulty_id ?? "");
       setQualityLevelId(card.quality_level_id ?? "");
 
-      // ✅ ISO -> local datetime-local
+      setCreatedAtIso(card.created_at ? String(card.created_at) : null);
+
       setDeadline(card.deadline ? isoToLocalInputValue(String(card.deadline)) : "");
       setAcceptedDoneIso(String(card.accepted_at || card.updated_at || "") || null);
       setTimerTotal(Number(card.timer_total_seconds ?? 0));
@@ -1071,6 +1128,8 @@ function CardModal(props: {
 
         setCardId(cardR.id);
         setColumnId(cardR.column_id);
+
+        setCreatedAtIso(cardR.created_at ? String(cardR.created_at) : null);
 
         const attsR: CardAttachment[] = jsonR.data.attachments ?? [];
         setAttachments(attsR);
@@ -1102,7 +1161,6 @@ function CardModal(props: {
         }));
       }
 
-      // ensure attachment blocks exist for each attachment
       const attIds = new Set(atts.map((a) => a.id));
       const usedAtt = new Set(
         incomingBlocks
@@ -1156,6 +1214,7 @@ function CardModal(props: {
     setTitle("");
     setDeadline("");
     setAcceptedDoneIso(null);
+    setCreatedAtIso(null);
     setTimerTotal(0);
 
     setBlocks([]);
@@ -1172,10 +1231,10 @@ function CardModal(props: {
     setColumnId(props.creatingColumnId ?? props.columns[0]?.id ?? "");
   }
 
-  // ✅ фикс бага “открылась старая карточка при создании”: сбрасываем ключ при закрытии
   useEffect(() => {
     if (!props.open) {
       openKeyRef.current = "";
+      opLockRef.current = false;
       return;
     }
 
@@ -1193,6 +1252,10 @@ function CardModal(props: {
   async function createCard() {
     const retry = () => createCard();
     if (!validateRequired(retry)) return;
+    if (opLockRef.current) return;
+    opLockRef.current = true;
+
+    const deadlineIso = deadline ? localInputValueToIso(deadline) : null;
 
     showLoading("Создаю карточку", "Пожалуйста, подожди...");
     setLoading(true);
@@ -1208,6 +1271,7 @@ function CardModal(props: {
           projectId,
           difficultyId: difficultyId || null,
           qualityLevelId: isAccepted ? (qualityLevelId || null) : null,
+          deadline: deadlineIso,
         }),
       });
 
@@ -1219,6 +1283,7 @@ function CardModal(props: {
       showError("Ошибка создания", humanizeError(e?.message ?? e), retry);
     } finally {
       setLoading(false);
+      opLockRef.current = false;
     }
   }
 
@@ -1226,6 +1291,8 @@ function CardModal(props: {
     const retry = () => saveCard();
     if (!cardId) return;
     if (!validateRequired(retry)) return;
+    if (opLockRef.current) return;
+    opLockRef.current = true;
 
     const deadlineIso = deadline ? localInputValueToIso(deadline) : null;
 
@@ -1262,6 +1329,7 @@ function CardModal(props: {
       showError("Ошибка сохранения", humanizeError(e?.message ?? e), retry);
     } finally {
       setLoading(false);
+      opLockRef.current = false;
     }
   }
 
@@ -1285,7 +1353,6 @@ function CardModal(props: {
     }
   }
 
-  // ===== Blocks
   function blockTitle(b: CardBlock) {
     if (b.type === "text") return b.payload?.legacy ? "Описание (перенесено)" : "Описание";
     if (b.type === "checklist") return String(b.payload?.title ?? "Чеклист");
@@ -1302,8 +1369,7 @@ function CardModal(props: {
   }
 
   async function createBlock(type: BlockType) {
-    if (!cardId)
-      return showError("Сначала создай карточку", "Нельзя добавлять блоки, пока карточка не создана.", () => {});
+    if (!cardId) return showError("Сначала создай карточку", "Нельзя добавлять блоки, пока карточка не создана.", () => {});
 
     const retry = () => createBlock(type);
 
@@ -1346,7 +1412,6 @@ function CardModal(props: {
   async function deleteBlock(id: string) {
     const b = blocks.find((x) => x.id === id);
 
-    // ✅ если это фото-блок — удаляем фото целиком
     if (b?.type === "attachment") {
       const attId = String(b.payload?.attachmentId ?? "").trim();
       if (!attId) {
@@ -1416,6 +1481,25 @@ function CardModal(props: {
   }
 
   // ===== Checklist items
+  function setChecklistItemTextLocal(blockId: string, itemId: string, text: string) {
+    updateBlockLocal(blockId, (b) => {
+      const items = (b.items ?? []).map((x) => (x.id === itemId ? { ...x, text } : x));
+      return { ...b, items };
+    });
+  }
+
+  async function saveChecklistItemText(itemId: string, text: string) {
+    try {
+      await fetchJson("/api/cards/checklist-items", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: itemId, text }),
+      });
+    } catch (e: any) {
+      showError("Не удалось сохранить пункт", humanizeError(e?.message ?? e));
+    }
+  }
+
   async function addChecklistItem(blockId: string, text: string) {
     const t = text.trim();
     if (!t) return;
@@ -1456,18 +1540,6 @@ function CardModal(props: {
       });
     } catch (e: any) {
       showError("Не удалось обновить пункт", humanizeError(e?.message ?? e));
-    }
-  }
-
-  async function renameChecklistItem(itemId: string, _blockId: string, text: string) {
-    try {
-      await fetchJson("/api/cards/checklist-items", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: itemId, text }),
-      });
-    } catch (e: any) {
-      showError("Не удалось сохранить пункт", humanizeError(e?.message ?? e));
     }
   }
 
@@ -1641,13 +1713,18 @@ function CardModal(props: {
     const deadlineIso = localInputValueToIso(deadline);
     if (!deadlineIso) return null;
 
-    // ✅ если карточка уже в "Принято" — показываем итог относительно дедлайна
-    if (isAccepted && acceptedDoneIso) {
+    // ✅ “заморозка” и в accepted, и в done
+    if (isFreezeLane && acceptedDoneIso) {
       return fmtDoneVsDeadline(deadlineIso, acceptedDoneIso);
     }
 
     return fmtTimeLeft(deadlineIso);
-  }, [deadline, isAccepted, acceptedDoneIso]);
+  }, [deadline, isFreezeLane, acceptedDoneIso]);
+
+  const createdAtLine = useMemo(() => {
+    if (!createdAtIso) return "";
+    return fmtMoscowDateTime(createdAtIso);
+  }, [createdAtIso]);
 
   return (
     <Modal open={props.open} onClose={props.onClose}>
@@ -1656,6 +1733,7 @@ function CardModal(props: {
           <div className="min-w-0">
             <div className="text-xs opacity-70">{cardId ? "Карточка" : "Новая карточка"}</div>
             <div className="font-semibold truncate">{title || "—"}</div>
+            {!!createdAtLine && <div className="mt-1 text-xs opacity-70 truncate">🕒 Создано: {createdAtLine}</div>}
           </div>
 
           <div className="flex items-center gap-2">
@@ -1808,11 +1886,7 @@ function CardModal(props: {
                 <div className="rounded-2xl border p-3">
                   <div className="text-sm font-semibold">Добавить элемент</div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      className="rounded-xl border px-3 py-2 text-sm"
-                      onClick={() => createBlock("text")}
-                      disabled={!cardId}
-                    >
+                    <button className="rounded-xl border px-3 py-2 text-sm" onClick={() => createBlock("text")} disabled={!cardId}>
                       + Описание
                     </button>
                     <button
@@ -1822,18 +1896,10 @@ function CardModal(props: {
                     >
                       + Чеклист
                     </button>
-                    <button
-                      className="rounded-xl border px-3 py-2 text-sm"
-                      onClick={() => createBlock("link")}
-                      disabled={!cardId}
-                    >
+                    <button className="rounded-xl border px-3 py-2 text-sm" onClick={() => createBlock("link")} disabled={!cardId}>
                       + Ссылка
                     </button>
-                    <button
-                      className="rounded-xl border px-3 py-2 text-sm"
-                      onClick={() => setTab("files")}
-                      disabled={!cardId}
-                    >
+                    <button className="rounded-xl border px-3 py-2 text-sm" onClick={() => setTab("files")} disabled={!cardId}>
                       + Фото
                     </button>
                   </div>
@@ -1864,20 +1930,14 @@ function CardModal(props: {
                                   </span>
                                 )}
 
-                                {b.type === "link" && (
-                                  <span className="text-xs rounded-full border px-2 py-0.5 opacity-70">link</span>
-                                )}
+                                {b.type === "link" && <span className="text-xs rounded-full border px-2 py-0.5 opacity-70">link</span>}
                                 {b.type === "attachment" && (
                                   <span className="text-xs rounded-full border px-2 py-0.5 opacity-70">photo</span>
                                 )}
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <button
-                                  className="rounded-lg border px-2 py-1 text-xs"
-                                  onClick={() => moveBlock(b.id, "up")}
-                                  title="Вверх"
-                                >
+                                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => moveBlock(b.id, "up")} title="Вверх">
                                   ↑
                                 </button>
                                 <button
@@ -2002,7 +2062,8 @@ function CardModal(props: {
                                 }}
                                 onAddItem={(text) => addChecklistItem(b.id, text)}
                                 onToggle={(itemId, next) => toggleChecklistItem(itemId, b.id, next)}
-                                onRenameItem={(itemId, text) => renameChecklistItem(itemId, b.id, text)}
+                                onChangeItemText={(itemId, text) => setChecklistItemTextLocal(b.id, itemId, text)}
+                                onSaveItemText={(itemId, text) => saveChecklistItemText(itemId, text)}
                                 onDeleteItem={(itemId) => deleteChecklistItem(itemId, b.id)}
                                 onMoveItem={(itemId, dir) => moveChecklistItem(itemId, b.id, dir)}
                               />
@@ -2011,11 +2072,7 @@ function CardModal(props: {
                             {b.type === "attachment" && (
                               <div className="mt-3">
                                 {b.attachment ? (
-                                  <a
-                                    href={publicUrl(b.attachment.bucket, b.attachment.path)}
-                                    target="_blank"
-                                    className="block rounded-xl border overflow-hidden"
-                                  >
+                                  <a href={publicUrl(b.attachment.bucket, b.attachment.path)} target="_blank" className="block rounded-xl border overflow-hidden">
                                     <img
                                       src={publicUrl(b.attachment.bucket, b.attachment.path)}
                                       className="w-full max-h-[420px] object-contain bg-black/5 dark:bg-white/5"
@@ -2038,9 +2095,7 @@ function CardModal(props: {
                   Подзадачи: <span className="font-semibold">{overallChecklist.done}</span>/{overallChecklist.total}
                 </div>
 
-                <div className="mt-3 text-sm opacity-70">
-                  Таймер: {fmtSeconds(timerTotal)} (таймер сделаем следующим шагом)
-                </div>
+                <div className="mt-3 text-sm opacity-70">Таймер: {fmtSeconds(timerTotal)} (таймер сделаем следующим шагом)</div>
               </div>
             )}
 
@@ -2125,12 +2180,7 @@ function CardModal(props: {
 
                       <div className="mt-3 flex flex-wrap gap-2">
                         {imgs.map((img) => (
-                          <a
-                            key={img.id}
-                            href={publicUrl(img.bucket, img.path)}
-                            target="_blank"
-                            className="rounded-lg border overflow-hidden"
-                          >
+                          <a key={img.id} href={publicUrl(img.bucket, img.path)} target="_blank" className="rounded-lg border overflow-hidden">
                             <img src={publicUrl(img.bucket, img.path)} className="w-24 h-24 object-cover" />
                           </a>
                         ))}
@@ -2195,7 +2245,12 @@ function ChecklistBlock(props: {
 
   onAddItem: (text: string) => void;
   onToggle: (itemId: string, next: boolean) => void;
-  onRenameItem: (itemId: string, text: string) => void;
+
+  // ✅ локальное редактирование текста пункта (чтобы можно было печатать сразу)
+  onChangeItemText: (itemId: string, text: string) => void;
+  // ✅ сохранение на blur (без кнопок)
+  onSaveItemText: (itemId: string, text: string) => void;
+
   onDeleteItem: (itemId: string) => void;
   onMoveItem: (itemId: string, dir: "up" | "down") => void;
 }) {
@@ -2265,42 +2320,25 @@ function ChecklistBlock(props: {
         ) : (
           items.map((it) => (
             <div key={it.id} className="rounded-xl border p-2 flex items-start gap-2">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={it.is_done}
-                onChange={(e) => props.onToggle(it.id, e.target.checked)}
-              />
+              <input type="checkbox" className="mt-1" checked={it.is_done} onChange={(e) => props.onToggle(it.id, e.target.checked)} />
 
               <div className="flex-1">
                 <input
                   className="w-full rounded-lg border px-2 py-1 bg-transparent outline-none"
                   value={it.text}
-                  onChange={(e) => props.onRenameItem(it.id, e.target.value)}
-                  onBlur={(e) => props.onRenameItem(it.id, (e.target as any).value)}
+                  onChange={(e) => props.onChangeItemText(it.id, e.target.value)}
+                  onBlur={(e) => props.onSaveItemText(it.id, (e.target as any).value)}
                 />
               </div>
 
               <div className="flex items-center gap-1">
-                <button
-                  className="rounded-lg border px-2 py-1 text-xs"
-                  onClick={() => props.onMoveItem(it.id, "up")}
-                  title="Вверх"
-                >
+                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => props.onMoveItem(it.id, "up")} title="Вверх">
                   ↑
                 </button>
-                <button
-                  className="rounded-lg border px-2 py-1 text-xs"
-                  onClick={() => props.onMoveItem(it.id, "down")}
-                  title="Вниз"
-                >
+                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => props.onMoveItem(it.id, "down")} title="Вниз">
                   ↓
                 </button>
-                <button
-                  className="rounded-lg border px-2 py-1 text-xs"
-                  onClick={() => props.onDeleteItem(it.id)}
-                  title="Удалить"
-                >
+                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => props.onDeleteItem(it.id)} title="Удалить">
                   ✕
                 </button>
               </div>

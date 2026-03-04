@@ -37,7 +37,7 @@ export default async function MonthPage({
   const { data: cards } = await supabase
     .from("cards")
     .select(
-      "id, title, column_id, position, timer_total_seconds, timer_running, deadline, project_id, difficulty_id, quality_level_id, accepted_at, updated_at"
+      "id, title, column_id, position, timer_total_seconds, timer_running, deadline, project_id, difficulty_id, quality_level_id, accepted_at, created_at, updated_at"
     )
     .eq("board_id", board.id)
     .order("position", { ascending: true });

@@ -18,6 +18,30 @@ function groupPathsByBucket(rows: Array<{ bucket: string; path: string }>) {
   return map;
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function normalizeDeadline(input: any): string | null | "__INVALID__" {
+  if (input === undefined) return null;
+  if (input === null) return null;
+  const s = String(input).trim();
+  if (!s) return null;
+  const t = new Date(s).getTime();
+  if (!Number.isFinite(t)) return "__INVALID__";
+  return new Date(t).toISOString();
+}
+
+async function getColumnSystemKey(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  columnId: string
+): Promise<"accepted" | "done" | null> {
+  const { data, error } = await supabase.from("board_columns").select("system_key").eq("id", columnId).single();
+  if (error) throw new Error(error.message);
+  const key = data?.system_key ?? null;
+  return key === "accepted" || key === "done" ? key : null;
+}
+
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -37,8 +61,20 @@ export async function POST(req: Request) {
   const difficultyId = difficultyIdRaw ? String(difficultyIdRaw) : null;
   const qualityLevelId = qualityLevelIdRaw ? String(qualityLevelIdRaw) : null;
 
+  const deadlineNorm = normalizeDeadline(body?.deadline);
+  if (deadlineNorm === "__INVALID__") return jsonError("Invalid deadline", 400);
+
   if (!workspaceId || !boardId || !columnId || !title || !projectId) {
     return jsonError("workspaceId/boardId/columnId/title/projectId required", 400);
+  }
+
+  // если создают сразу в системной колонке accepted/done — фиксируем timestamp сдачи
+  let acceptedAt: string | null = null;
+  try {
+    const sys = await getColumnSystemKey(supabase, columnId);
+    if (sys === "accepted" || sys === "done") acceptedAt = nowIso();
+  } catch (e: any) {
+    return jsonError(e?.message ?? "Failed to read column", 500);
   }
 
   const { data: last, error: lastErr } = await supabase
@@ -63,10 +99,14 @@ export async function POST(req: Request) {
       project_id: projectId,
       difficulty_id: difficultyId,
       quality_level_id: qualityLevelId,
+      deadline: deadlineNorm ? deadlineNorm : null,
+      accepted_at: acceptedAt,
       created_by: userData.user.id,
       position,
     })
-    .select("id, title, column_id, position, timer_total_seconds, timer_running, deadline, project_id, difficulty_id, quality_level_id")
+    .select(
+      "id, title, column_id, position, timer_total_seconds, timer_running, deadline, project_id, difficulty_id, quality_level_id, accepted_at, created_at, updated_at"
+    )
     .single();
 
   if (error) return jsonError(error.message, 500);
@@ -85,7 +125,12 @@ export async function PATCH(req: Request) {
   const patch: any = {};
 
   if (body.title != null) patch.title = String(body.title);
-  if (body.deadline !== undefined) patch.deadline = body.deadline ? String(body.deadline) : null;
+
+  if (body.deadline !== undefined) {
+    const deadlineNorm = normalizeDeadline(body.deadline);
+    if (deadlineNorm === "__INVALID__") return jsonError("Invalid deadline", 400);
+    patch.deadline = deadlineNorm ? deadlineNorm : null;
+  }
 
   if (body.projectId !== undefined) patch.project_id = body.projectId ? String(body.projectId) : null;
 
@@ -97,14 +142,37 @@ export async function PATCH(req: Request) {
     patch.quality_level_id = body.qualityLevelId ? String(body.qualityLevelId) : null;
   }
 
-  if (body.columnId !== undefined) patch.column_id = String(body.columnId);
+  // ✅ фиксация accepted_at ТОЛЬКО при реальном переходе карточки в системную колонку accepted/done
+  if (body.columnId !== undefined) {
+    const newColumnId = String(body.columnId);
+
+    const { data: cur, error: curErr } = await supabase.from("cards").select("column_id").eq("id", id).single();
+    if (curErr) return jsonError(curErr.message, 500);
+
+    const oldColumnId = String(cur?.column_id ?? "");
+    patch.column_id = newColumnId;
+
+    if (oldColumnId && newColumnId && oldColumnId !== newColumnId) {
+      try {
+        const sys = await getColumnSystemKey(supabase, newColumnId);
+        if (sys === "accepted" || sys === "done") {
+          patch.accepted_at = nowIso();
+        }
+      } catch (e: any) {
+        return jsonError(e?.message ?? "Failed to read column", 500);
+      }
+    }
+  }
+
   if (body.position !== undefined) patch.position = Number(body.position);
 
   const { data, error } = await supabase
     .from("cards")
     .update(patch)
     .eq("id", id)
-    .select("id, title, column_id, position, timer_total_seconds, timer_running, deadline, project_id, difficulty_id, quality_level_id")
+    .select(
+      "id, title, column_id, position, timer_total_seconds, timer_running, deadline, project_id, difficulty_id, quality_level_id, accepted_at, created_at, updated_at"
+    )
     .single();
 
   if (error) return jsonError(error.message, 500);
@@ -121,18 +189,10 @@ export async function DELETE(req: Request) {
   if (!userData.user) return jsonError("Unauthorized", 401);
 
   // 0) соберём все файлы (attachments + comment attachments), чтобы попытаться удалить из storage
-  const { data: atts, error: attsErr } = await supabase
-    .from("card_attachments")
-    .select("bucket, path")
-    .eq("card_id", id);
-
+  const { data: atts, error: attsErr } = await supabase.from("card_attachments").select("bucket, path").eq("card_id", id);
   if (attsErr) return jsonError(attsErr.message, 500);
 
-  const { data: comms, error: commErr } = await supabase
-    .from("card_comments")
-    .select("id")
-    .eq("card_id", id);
-
+  const { data: comms, error: commErr } = await supabase.from("card_comments").select("id").eq("card_id", id);
   if (commErr) return jsonError(commErr.message, 500);
 
   const commentIds = (comms ?? []).map((x: any) => x.id).filter(Boolean);
@@ -161,11 +221,7 @@ export async function DELETE(req: Request) {
 
   // 1) comment attachments (через comments)
   if (commentIds.length > 0) {
-    const { error: caDelErr } = await supabase
-      .from("card_comment_attachments")
-      .delete()
-      .in("comment_id", commentIds);
-
+    const { error: caDelErr } = await supabase.from("card_comment_attachments").delete().in("comment_id", commentIds);
     if (caDelErr) return jsonError(caDelErr.message, 500);
   }
 

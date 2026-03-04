@@ -1,3 +1,4 @@
+// src/app/api/cards/details/route.ts
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -26,12 +27,7 @@ export async function GET(req: Request) {
     if (cErr) return jsonError(cErr.message, 500);
     if (!card) return jsonError("Card not found", 404);
 
-    const [
-      attachmentsRes,
-      blocksRes,
-      itemsRes,
-      commentsRes,
-    ] = await Promise.all([
+    const [attachmentsRes, blocksRes, itemsRes, commentsRes] = await Promise.all([
       supabase
         .from("card_attachments")
         .select("id, card_id, bucket, path, mime_type, size_bytes, width, height, is_cover, created_at")
