@@ -23,10 +23,8 @@ type Card = {
   timer_running: boolean;
   deadline: string | null;
   project_id: string;
-  difficulty_id: string | null; // ✅ можно везде
-  quality_level_id: string | null; // ✅ только accepted
-
-  // meta
+  difficulty_id: string | null;
+  quality_level_id: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   accepted_at?: string | null;
@@ -78,8 +76,8 @@ type CardBlock = {
   type: BlockType;
   position: number;
   payload: any;
-  items?: ChecklistItem[]; // for checklist
-  attachment?: CardAttachment | null; // for attachment
+  items?: ChecklistItem[];
+  attachment?: CardAttachment | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -98,6 +96,120 @@ const MONTHS = [
   "Ноябрь",
   "Декабрь",
 ];
+
+/* =======================
+   UI helpers
+======================= */
+
+function softButtonClass(extra = "") {
+  return [
+    "rounded-xl border px-3 py-2 text-sm transition-all duration-200",
+    "border-[rgb(var(--border))] text-[rgb(var(--fg))]",
+    "bg-white/90 hover:bg-sky-50 hover:border-sky-300/70 hover:-translate-y-[1px] hover:shadow-[0_10px_24px_rgba(56,189,248,0.14)]",
+    "dark:bg-transparent dark:text-white dark:hover:bg-white/10 dark:hover:border-white/20 dark:hover:shadow-none",
+    "disabled:opacity-60 disabled:transform-none disabled:shadow-none",
+    extra,
+  ].join(" ");
+}
+
+function iconButtonClass(extra = "") {
+  return [
+    "rounded-lg border px-2 py-1 text-xs transition-all duration-200",
+    "border-[rgb(var(--border))] text-[rgb(var(--fg))]",
+    "bg-white/90 hover:bg-sky-50 hover:border-sky-300/70 hover:-translate-y-[1px] hover:shadow-[0_10px_24px_rgba(56,189,248,0.14)]",
+    "dark:bg-transparent dark:text-white dark:hover:bg-white/10 dark:hover:border-white/20 dark:hover:shadow-none",
+    "disabled:opacity-60 disabled:transform-none disabled:shadow-none",
+    extra,
+  ].join(" ");
+}
+
+function primaryButtonClass(extra = "", disabled = false) {
+  return [
+    "rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
+    disabled
+      ? "border border-slate-200 bg-slate-200 text-slate-500 dark:border-white/10 dark:bg-white/15 dark:text-white/45"
+      : "border border-sky-200 bg-sky-100 text-sky-950 shadow-[0_10px_24px_rgba(56,189,248,0.18)] hover:bg-sky-200 hover:-translate-y-[1px] hover:shadow-[0_14px_30px_rgba(56,189,248,0.24)] dark:border-white dark:bg-white dark:text-black dark:shadow-none dark:hover:bg-white/90 dark:hover:shadow-none",
+    extra,
+  ].join(" ");
+}
+
+function dangerButtonClass(extra = "", disabled = false) {
+  return [
+    "rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
+    disabled
+      ? "border border-slate-200 bg-slate-200 text-slate-500 dark:border-white/10 dark:bg-white/15 dark:text-white/45"
+      : "border border-red-200 bg-red-50 text-red-700 shadow-[0_10px_24px_rgba(239,68,68,0.10)] hover:bg-red-100 hover:-translate-y-[1px] hover:shadow-[0_14px_30px_rgba(239,68,68,0.16)] dark:border-red-400/40 dark:bg-red-500/15 dark:text-red-200 dark:shadow-none dark:hover:bg-red-500/20",
+    extra,
+  ].join(" ");
+}
+
+function inputClass(extra = "") {
+  return [
+    "w-full rounded-xl border px-3 py-2 bg-transparent outline-none transition-all duration-200",
+    "border-[rgb(var(--border))] text-[rgb(var(--fg))]",
+    "hover:border-sky-300/70 focus:border-sky-400/70",
+    "text-[rgb(var(--fg))] dark:text-white",
+    extra,
+  ].join(" ");
+}
+
+function cardSurfaceClass(extra = "") {
+  return [
+    "rounded-2xl border bg-[rgb(var(--card))] transition-all duration-200",
+    "hover:shadow-[0_14px_30px_rgba(56,189,248,0.10)]",
+    "dark:hover:shadow-none",
+    extra,
+  ].join(" ");
+}
+
+/* ===== СИЛЬНО УСИЛЕНА ЧИТАЕМОСТЬ КАРТОЧЕК В LIGHT ===== */
+function laneCardClass(extra = "") {
+  return [
+    "rounded-xl border p-3 transition-all duration-200",
+    "border-sky-200/95 ring-1 ring-white/80",
+    "bg-[rgba(255,255,255,0.98)] text-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.06)]",
+    "hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-[1px] hover:shadow-[0_16px_30px_rgba(56,189,248,0.18)]",
+    "dark:border-[rgb(var(--border))] dark:ring-0 dark:bg-[rgb(var(--card))] dark:text-white dark:shadow-none dark:hover:bg-white/10 dark:hover:border-white/20 dark:hover:shadow-none",
+    extra,
+  ].join(" ");
+}
+
+function laneTitleClass(extra = "") {
+  return ["text-slate-950 dark:text-white", extra].join(" ");
+}
+
+function laneMetaClass(extra = "") {
+  return ["text-slate-800 dark:text-white/85", extra].join(" ");
+}
+
+function laneMutedClass(extra = "") {
+  return ["text-slate-700 dark:text-white/70", extra].join(" ");
+}
+
+function chipClass(extra = "") {
+  return [
+    "inline-flex items-center rounded-full border px-2 py-0.5 font-medium",
+    "border-sky-300 bg-sky-50 text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
+    "dark:border-[rgb(var(--border))] dark:bg-white/5 dark:text-white dark:shadow-none",
+    extra,
+  ].join(" ");
+}
+
+function mutedTextClass(extra = "") {
+  return ["text-[rgb(var(--fg))] opacity-70 dark:text-white/70", extra].join(" ");
+}
+
+function strongTextClass(extra = "") {
+  return ["text-[rgb(var(--fg))] dark:text-white", extra].join(" ");
+}
+
+function badgeClass(extra = "") {
+  return [
+    "inline-flex items-center rounded-full border px-2 py-0.5 text-[rgb(var(--fg))] dark:text-white",
+    "border-[rgb(var(--border))] bg-white/80 dark:bg-white/5",
+    extra,
+  ].join(" ");
+}
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -122,7 +234,6 @@ function fmtMoscowDateTime(iso: string) {
   }
 }
 
-// ISO (из БД) -> значение для <input type="datetime-local">
 function isoToLocalInputValue(iso: string) {
   const d = new Date(iso);
   const t = d.getTime();
@@ -132,7 +243,6 @@ function isoToLocalInputValue(iso: string) {
   )}`;
 }
 
-// значение из datetime-local -> ISO (в БД)
 function localInputValueToIso(value: string): string | null {
   const s = String(value || "").trim();
   if (!s) return null;
@@ -202,7 +312,7 @@ function fmtDoneVsDeadline(deadlineIso: string, doneIso: string) {
   const done = new Date(doneIso).getTime();
   if (!Number.isFinite(d) || !Number.isFinite(done)) return { text: "дедлайн", tone: "muted" as const };
 
-  const delta = done - d; // >0 = поздно
+  const delta = done - d;
   const absText = fmtDeltaParts(Math.abs(delta));
   if (delta > 0) return { text: `сдано: +${absText}`, tone: "danger" as const };
   if (delta < 0) return { text: `сдано: -${absText}`, tone: "success" as const };
@@ -393,7 +503,6 @@ export default function MonthView(props: {
     return () => {
       supabase.removeChannel(ch);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, props.boardId]);
 
   const diffMap = useMemo(() => Object.fromEntries(props.difficulties.map((d) => [d.id, d])), [props.difficulties]);
@@ -405,7 +514,6 @@ export default function MonthView(props: {
     [columns]
   );
 
-  // ✅ дедлайн “замораживается” и в accepted, и в done
   const freezeColumnIds = useMemo(
     () => new Set(columns.filter((c) => c.system_key === "accepted" || c.system_key === "done").map((c) => c.id)),
     [columns]
@@ -582,6 +690,7 @@ export default function MonthView(props: {
       })
     );
   }
+
   function onCardUpdated(patch: Partial<Card> & { id: string }) {
     keepScrollX(() =>
       setCards((prev) => {
@@ -590,6 +699,7 @@ export default function MonthView(props: {
       })
     );
   }
+
   function onCardDeleted(id: string) {
     keepScrollX(() => setCards((p) => p.filter((c) => c.id !== id)));
   }
@@ -598,15 +708,15 @@ export default function MonthView(props: {
 
   return (
     <div className="min-w-0">
-      <div className="rounded-2xl border bg-[rgb(var(--card))] p-4">
+      <div className={cardSurfaceClass("p-4")}>
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
-            <div className="text-xs opacity-70">Месяц</div>
-            <h1 className="text-2xl font-semibold">
+            <div className={mutedTextClass("text-xs")}>Месяц</div>
+            <h1 className={strongTextClass("text-2xl font-semibold")}>
               {MONTHS[props.month - 1]} {props.year}
             </h1>
           </div>
-          <a className="text-sm underline opacity-80" href={`/app/${props.workspaceId}/years`}>
+          <a className={softButtonClass()} href={`/app/${props.workspaceId}/years`}>
             Настройки года
           </a>
         </div>
@@ -621,10 +731,7 @@ export default function MonthView(props: {
 
       <div ref={lanesRef} className="mt-6 flex gap-4 overflow-x-auto overscroll-x-contain pb-4">
         <div className="min-w-[220px]">
-          <button
-            className="w-full rounded-2xl border bg-[rgb(var(--card))] p-3 hover:bg-black/5 dark:hover:bg-white/10"
-            onClick={createColumn}
-          >
+          <button className={softButtonClass("w-full rounded-2xl p-3")} onClick={createColumn}>
             + Дорожка
           </button>
         </div>
@@ -636,21 +743,18 @@ export default function MonthView(props: {
             .sort((a, b) => a.position - b.position);
 
           return (
-            <div key={col.id} className="min-w-[320px] rounded-2xl border bg-[rgb(var(--card))] p-3">
+            <div key={col.id} className={cardSurfaceClass("min-w-[320px] p-3")}>
               <div className="flex items-center justify-between gap-2">
-                <div className="font-semibold">{col.title}</div>
+                <div className={strongTextClass("font-semibold")}>{col.title}</div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    className="text-sm rounded-xl border px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
-                    onClick={() => openCreateCard(col.id)}
-                  >
+                  <button className={softButtonClass("px-2 py-1")} onClick={() => openCreateCard(col.id)}>
                     + карточка
                   </button>
 
                   {!col.system_key && (
                     <button
-                      className="text-sm rounded-xl border px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+                      className={softButtonClass("px-2 py-1")}
                       onClick={(e) => openColumnMenu(col.id, e.currentTarget)}
                       title="Настройки дорожки"
                     >
@@ -658,15 +762,13 @@ export default function MonthView(props: {
                     </button>
                   )}
 
-                  {col.system_key && (
-                    <span className="text-xs rounded-full border px-2 py-0.5 opacity-70">{col.system_key}</span>
-                  )}
+                  {col.system_key && <span className={badgeClass("text-xs")}>{col.system_key}</span>}
                 </div>
               </div>
 
               <div className="mt-3 space-y-2">
                 {colCards.length === 0 ? (
-                  <div className="text-sm opacity-60">Пока пусто.</div>
+                  <div className={mutedTextClass("text-sm opacity-60")}>Пока пусто.</div>
                 ) : (
                   colCards.map((c) => {
                     const diff = diffMap[c.difficulty_id ?? ""];
@@ -686,15 +788,15 @@ export default function MonthView(props: {
                     const createdLine = c.created_at ? fmtMoscowDateTime(c.created_at) : "";
 
                     return (
-                      <div key={c.id} className="rounded-xl border p-3 hover:bg-black/5 dark:hover:bg-white/10">
+                      <div key={c.id} className={laneCardClass()}>
                         <button className="w-full text-left" onClick={() => openExistingCard(c.id)}>
-                          <div className="font-semibold">{c.title}</div>
+                          <div className={laneTitleClass("font-semibold text-[18px] leading-[1.35]")}>{c.title}</div>
 
-                          <div className="mt-2 text-xs opacity-90 space-y-1">
+                          <div className="mt-3 space-y-2 text-xs">
                             {!!proj?.name && (
                               <div className="min-w-0">
                                 <span
-                                  className="inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5"
+                                  className={chipClass("inline-flex max-w-full items-center gap-1")}
                                   title={proj.name}
                                 >
                                   <span className="shrink-0">📁</span>
@@ -705,7 +807,7 @@ export default function MonthView(props: {
 
                             {diff?.code && (
                               <div className="min-w-0">
-                                <span className="inline-flex max-w-full items-center rounded-full border px-2 py-0.5">
+                                <span className={chipClass("inline-flex max-w-full items-center")}>
                                   Сложн: {diff.code}
                                 </span>
                               </div>
@@ -715,35 +817,33 @@ export default function MonthView(props: {
                               <div className="flex flex-wrap gap-2 items-center">
                                 {deadlineBadge && (
                                   <span
-                                    className={`rounded-full border px-2 py-0.5 ${
+                                    className={`rounded-full border px-2 py-0.5 font-medium ${
                                       deadlineBadge.tone === "danger"
-                                        ? "border-red-500/40 bg-red-500/10"
+                                        ? "border-red-300 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
                                         : deadlineBadge.tone === "warn"
-                                        ? "border-amber-500/40 bg-amber-500/10"
+                                        ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
                                         : deadlineBadge.tone === "success"
-                                        ? "border-emerald-500/40 bg-emerald-500/10"
-                                        : ""
+                                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                        : "border-sky-300 bg-sky-50 text-slate-800 dark:border-[rgb(var(--border))] dark:bg-white/5 dark:text-white/80"
                                     }`}
                                   >
                                     ⏳ {deadlineBadge.text}
                                   </span>
                                 )}
 
-                                {showTimer && (
-                                  <span className="rounded-full border px-2 py-0.5">⏱ {fmtSeconds(c.timer_total_seconds)}</span>
-                                )}
+                                {showTimer && <span className={chipClass()}>⏱ {fmtSeconds(c.timer_total_seconds)}</span>}
                               </div>
                             )}
 
-                            {createdLine && <div className="text-xs opacity-70 truncate">🕒 Создано: {createdLine}</div>}
+                            {createdLine && <div className={laneMutedClass("text-xs")}>🕒 Создано: {createdLine}</div>}
                           </div>
                         </button>
 
                         <div className="mt-3 flex justify-end gap-2">
-                          <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => moveCardOneStep(c, "up")}>
+                          <button className={iconButtonClass()} onClick={() => moveCardOneStep(c, "up")}>
                             ↑
                           </button>
-                          <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => moveCardOneStep(c, "down")}>
+                          <button className={iconButtonClass()} onClick={() => moveCardOneStep(c, "down")}>
                             ↓
                           </button>
                         </div>
@@ -766,11 +866,11 @@ export default function MonthView(props: {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setColMenu(null)} />
               <div
-                className="fixed z-50 w-[180px] rounded-xl border bg-[rgb(var(--card))] shadow-sm overflow-hidden"
+                className="fixed z-50 w-[180px] rounded-xl border bg-[rgb(var(--card))] shadow-sm overflow-hidden text-[rgb(var(--fg))] dark:text-white"
                 style={{ left: colMenu.x, top: colMenu.y }}
               >
                 <button
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+                  className="w-full text-left px-3 py-2 text-sm transition-all duration-200 hover:bg-sky-50 dark:hover:bg-white/10"
                   onClick={() => {
                     setColMenu(null);
                     renameColumn(col);
@@ -779,7 +879,7 @@ export default function MonthView(props: {
                   Переименовать
                 </button>
                 <button
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+                  className="w-full text-left px-3 py-2 text-sm transition-all duration-200 hover:bg-sky-50 dark:hover:bg-white/10"
                   onClick={() => {
                     setColMenu(null);
                     moveColumn(col, "left");
@@ -788,7 +888,7 @@ export default function MonthView(props: {
                   Сдвинуть влево
                 </button>
                 <button
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+                  className="w-full text-left px-3 py-2 text-sm transition-all duration-200 hover:bg-sky-50 dark:hover:bg-white/10"
                   onClick={() => {
                     setColMenu(null);
                     moveColumn(col, "right");
@@ -797,7 +897,7 @@ export default function MonthView(props: {
                   Сдвинуть вправо
                 </button>
                 <button
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-red-500/10"
+                  className="w-full text-left px-3 py-2 text-sm transition-all duration-200 hover:bg-red-500/10 text-red-700 dark:text-red-200"
                   onClick={() => {
                     setColMenu(null);
                     deleteColumn(col);
@@ -841,9 +941,9 @@ export default function MonthView(props: {
 
 function Stat({ label, value }: { label: string; value: any }) {
   return (
-    <div className="rounded-xl border p-3">
-      <div className="text-xs opacity-70">{label}</div>
-      <div className="mt-1 text-xl font-semibold">{value}</div>
+    <div className={cardSurfaceClass("rounded-xl p-3")}>
+      <div className={mutedTextClass("text-xs")}>{label}</div>
+      <div className={strongTextClass("mt-1 text-xl font-semibold")}>{value}</div>
     </div>
   );
 }
@@ -928,8 +1028,7 @@ function CardModal(props: {
       return;
     }
     if (!qualityLevelId) setQualityLevelId(props.qualities[0]?.id ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAccepted]);
+  }, [isAccepted, props.qualities, qualityLevelId]);
 
   const openKeyRef = useRef<string>("");
   const opLockRef = useRef(false);
@@ -947,8 +1046,9 @@ function CardModal(props: {
     if (s.includes("Invalid quality_level_id")) return "Качество не подходит для этого года. Выбери другое.";
     if (s.includes("Invalid deadline")) return "Дедлайн некорректный. Попробуй выбрать дату заново.";
     if (s.includes("Unauthorized")) return "Сессия истекла. Перезайди и попробуй снова.";
-    if (s.includes("Invalid key"))
+    if (s.includes("Invalid key")) {
       return "Имя файла/путь содержит запрещённые символы. Переименуй файл (латиница) или загрузи заново.";
+    }
     return s;
   }
 
@@ -1246,7 +1346,6 @@ function CardModal(props: {
 
     if (props.editingCardId) loadDetails(props.editingCardId);
     else openCreate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.open, props.editingCardId, props.creatingColumnId]);
 
   async function createCard() {
@@ -1369,7 +1468,9 @@ function CardModal(props: {
   }
 
   async function createBlock(type: BlockType) {
-    if (!cardId) return showError("Сначала создай карточку", "Нельзя добавлять блоки, пока карточка не создана.", () => {});
+    if (!cardId) {
+      return showError("Сначала создай карточку", "Нельзя добавлять блоки, пока карточка не создана.", () => {});
+    }
 
     const retry = () => createBlock(type);
 
@@ -1480,7 +1581,6 @@ function CardModal(props: {
     }
   }
 
-  // ===== Checklist items
   function setChecklistItemTextLocal(blockId: string, itemId: string, text: string) {
     updateBlockLocal(blockId, (b) => {
       const items = (b.items ?? []).map((x) => (x.id === itemId ? { ...x, text } : x));
@@ -1593,7 +1693,6 @@ function CardModal(props: {
     }
   }
 
-  // ===== Comments / Attachments
   async function addComment() {
     if (!cardId) return;
 
@@ -1713,7 +1812,6 @@ function CardModal(props: {
     const deadlineIso = localInputValueToIso(deadline);
     if (!deadlineIso) return null;
 
-    // ✅ “заморозка” и в accepted, и в done
     if (isFreezeLane && acceptedDoneIso) {
       return fmtDoneVsDeadline(deadlineIso, acceptedDoneIso);
     }
@@ -1728,65 +1826,48 @@ function CardModal(props: {
 
   return (
     <Modal open={props.open} onClose={props.onClose}>
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col text-[rgb(var(--fg))] dark:text-white">
         <div className="p-4 border-b flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-xs opacity-70">{cardId ? "Карточка" : "Новая карточка"}</div>
-            <div className="font-semibold truncate">{title || "—"}</div>
-            {!!createdAtLine && <div className="mt-1 text-xs opacity-70 truncate">🕒 Создано: {createdAtLine}</div>}
+            <div className={mutedTextClass("text-xs")}>{cardId ? "Карточка" : "Новая карточка"}</div>
+            <div className={strongTextClass("font-semibold truncate")}>{title || "—"}</div>
+            {!!createdAtLine && <div className={mutedTextClass("mt-1 text-xs truncate")}>🕒 Создано: {createdAtLine}</div>}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {!cardId ? (
-              <button
-                className="rounded-xl bg-black text-white px-4 py-2 dark:bg-white dark:text-black"
-                disabled={loading}
-                onClick={createCard}
-              >
+              <button className={primaryButtonClass("", loading)} disabled={loading} onClick={createCard}>
                 Создать
               </button>
             ) : (
-              <button
-                className="rounded-xl bg-black text-white px-4 py-2 dark:bg-white dark:text-black"
-                disabled={loading}
-                onClick={saveCard}
-              >
+              <button className={primaryButtonClass("", loading)} disabled={loading} onClick={saveCard}>
                 Сохранить
               </button>
             )}
 
             {cardId && (
-              <button className="rounded-xl border px-4 py-2" disabled={loading} onClick={deleteCard}>
+              <button className={dangerButtonClass("", loading)} disabled={loading} onClick={deleteCard}>
                 Удалить
               </button>
             )}
 
-            <button className="rounded-xl border px-4 py-2" onClick={props.onClose}>
+            <button className={softButtonClass()} onClick={props.onClose}>
               Закрыть
             </button>
           </div>
         </div>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_1fr] min-h-0">
-          {/* LEFT */}
           <div className="p-4 min-h-0 overflow-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <div className="text-xs opacity-70">Название</div>
-                <input
-                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
+                <div className={mutedTextClass("text-xs")}>Название</div>
+                <input className={inputClass()} value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
 
               <div>
-                <div className="text-xs opacity-70">Дорожка</div>
-                <select
-                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
-                  value={columnId}
-                  onChange={(e) => setColumnId(e.target.value)}
-                >
+                <div className={mutedTextClass("text-xs")}>Дорожка</div>
+                <select className={inputClass()} value={columnId} onChange={(e) => setColumnId(e.target.value)}>
                   {props.columns.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.title}
@@ -1796,12 +1877,8 @@ function CardModal(props: {
               </div>
 
               <div>
-                <div className="text-xs opacity-70">Проект (обязательно)</div>
-                <select
-                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                >
+                <div className={mutedTextClass("text-xs")}>Проект (обязательно)</div>
+                <select className={inputClass()} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
                   {props.projects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -1811,10 +1888,10 @@ function CardModal(props: {
               </div>
 
               <div>
-                <div className="text-xs opacity-70">Дедлайн (необязательно)</div>
+                <div className={mutedTextClass("text-xs")}>Дедлайн (необязательно)</div>
                 <input
                   type="datetime-local"
-                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+                  className={inputClass()}
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                 />
@@ -1827,7 +1904,7 @@ function CardModal(props: {
                         ? "text-amber-700 dark:text-amber-300"
                         : deadlineInfo.tone === "success"
                         ? "text-emerald-700 dark:text-emerald-300"
-                        : "opacity-70"
+                        : "opacity-70 text-[rgb(var(--fg))] dark:text-white/70"
                     }`}
                   >
                     ⏳ {deadlineInfo.text}
@@ -1836,12 +1913,8 @@ function CardModal(props: {
               </div>
 
               <div>
-                <div className="text-xs opacity-70">Сложность</div>
-                <select
-                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
-                  value={difficultyId}
-                  onChange={(e) => setDifficultyId(e.target.value)}
-                >
+                <div className={mutedTextClass("text-xs")}>Сложность</div>
+                <select className={inputClass()} value={difficultyId} onChange={(e) => setDifficultyId(e.target.value)}>
                   <option value="">—</option>
                   {props.difficulties.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -1852,9 +1925,9 @@ function CardModal(props: {
               </div>
 
               <div>
-                <div className="text-xs opacity-70">Качество (обязательно в “Принято”)</div>
+                <div className={mutedTextClass("text-xs")}>Качество (обязательно в “Принято”)</div>
                 <select
-                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+                  className={inputClass()}
                   value={qualityLevelId}
                   onChange={(e) => setQualityLevelId(e.target.value)}
                   disabled={!isAccepted}
@@ -1866,7 +1939,7 @@ function CardModal(props: {
                     </option>
                   ))}
                 </select>
-                {!isAccepted && <div className="mt-1 text-xs opacity-60">Качество доступно только в “Принято”.</div>}
+                {!isAccepted && <div className={mutedTextClass("mt-1 text-xs opacity-60")}>Качество доступно только в “Принято”.</div>}
               </div>
             </div>
 
@@ -1876,39 +1949,35 @@ function CardModal(props: {
                 <Tab label="Файлы" active={tab === "files"} onClick={() => setTab("files")} />
               </div>
 
-              <div className="text-sm opacity-80">
+              <div className={strongTextClass("text-sm opacity-80")}>
                 Подзадачи: <span className="font-semibold">{overallChecklist.done}</span>/{overallChecklist.total}
               </div>
             </div>
 
             {tab === "main" && (
               <div className="mt-3">
-                <div className="rounded-2xl border p-3">
-                  <div className="text-sm font-semibold">Добавить элемент</div>
+                <div className={cardSurfaceClass("p-3 rounded-2xl")}>
+                  <div className={strongTextClass("text-sm font-semibold")}>Добавить элемент</div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <button className="rounded-xl border px-3 py-2 text-sm" onClick={() => createBlock("text")} disabled={!cardId}>
+                    <button className={softButtonClass()} onClick={() => createBlock("text")} disabled={!cardId}>
                       + Описание
                     </button>
-                    <button
-                      className="rounded-xl border px-3 py-2 text-sm"
-                      onClick={() => createBlock("checklist")}
-                      disabled={!cardId}
-                    >
+                    <button className={softButtonClass()} onClick={() => createBlock("checklist")} disabled={!cardId}>
                       + Чеклист
                     </button>
-                    <button className="rounded-xl border px-3 py-2 text-sm" onClick={() => createBlock("link")} disabled={!cardId}>
+                    <button className={softButtonClass()} onClick={() => createBlock("link")} disabled={!cardId}>
                       + Ссылка
                     </button>
-                    <button className="rounded-xl border px-3 py-2 text-sm" onClick={() => setTab("files")} disabled={!cardId}>
+                    <button className={softButtonClass()} onClick={() => setTab("files")} disabled={!cardId}>
                       + Фото
                     </button>
                   </div>
-                  {!cardId && <div className="mt-2 text-xs opacity-60">Сначала нажми “Создать”.</div>}
+                  {!cardId && <div className={mutedTextClass("mt-2 text-xs opacity-60")}>Сначала нажми “Создать”.</div>}
                 </div>
 
                 <div className="mt-4 space-y-3">
                   {blocks.length === 0 ? (
-                    <div className="text-sm opacity-70">Пока нет контента. Добавь описание/чеклист/ссылку/фото.</div>
+                    <div className={mutedTextClass("text-sm")}>Пока нет контента. Добавь описание/чеклист/ссылку/фото.</div>
                   ) : (
                     blocks
                       .slice()
@@ -1917,41 +1986,27 @@ function CardModal(props: {
                         const prog = b.type === "checklist" ? checklistProgress(b) : null;
 
                         return (
-                          <div key={b.id} className="rounded-2xl border bg-[rgb(var(--card))] p-3">
+                          <div key={b.id} className={cardSurfaceClass("p-3")}>
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0 flex items-center gap-2">
-                                <div className="font-semibold truncate">
+                                <div className={strongTextClass("font-semibold truncate")}>
                                   {b.type === "checklist" ? String(b.payload?.title ?? "Чеклист") : blockTitle(b)}
                                 </div>
 
-                                {prog && (
-                                  <span className="text-xs rounded-full border px-2 py-0.5 opacity-80">
-                                    {prog.done}/{prog.total}
-                                  </span>
-                                )}
+                                {prog && <span className={badgeClass("text-xs opacity-80")}>{prog.done}/{prog.total}</span>}
 
-                                {b.type === "link" && <span className="text-xs rounded-full border px-2 py-0.5 opacity-70">link</span>}
-                                {b.type === "attachment" && (
-                                  <span className="text-xs rounded-full border px-2 py-0.5 opacity-70">photo</span>
-                                )}
+                                {b.type === "link" && <span className={badgeClass("text-xs opacity-70")}>link</span>}
+                                {b.type === "attachment" && <span className={badgeClass("text-xs opacity-70")}>photo</span>}
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => moveBlock(b.id, "up")} title="Вверх">
+                                <button className={iconButtonClass()} onClick={() => moveBlock(b.id, "up")} title="Вверх">
                                   ↑
                                 </button>
-                                <button
-                                  className="rounded-lg border px-2 py-1 text-xs"
-                                  onClick={() => moveBlock(b.id, "down")}
-                                  title="Вниз"
-                                >
+                                <button className={iconButtonClass()} onClick={() => moveBlock(b.id, "down")} title="Вниз">
                                   ↓
                                 </button>
-                                <button
-                                  className="rounded-lg border px-2 py-1 text-xs"
-                                  onClick={() => deleteBlock(b.id)}
-                                  title="Удалить"
-                                >
+                                <button className={iconButtonClass()} onClick={() => deleteBlock(b.id)} title="Удалить">
                                   ✕
                                 </button>
                               </div>
@@ -1959,8 +2014,9 @@ function CardModal(props: {
 
                             {b.type === "text" && (
                               <div className="mt-3">
-                                <textarea
-                                  className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none min-h-[140px]"
+                                <AutoSizeTextarea
+                                  className={inputClass("resize-none overflow-hidden whitespace-pre-wrap break-words")}
+                                  minRows={6}
                                   placeholder="Напиши текст..."
                                   value={String(b.payload?.text ?? "")}
                                   onChange={(e) => {
@@ -1970,8 +2026,8 @@ function CardModal(props: {
                                       payload: { ...(x.payload ?? {}), text: nextText },
                                     }));
                                   }}
-                                  onBlur={async () => {
-                                    const payload = { ...(b.payload ?? {}), text: String(b.payload?.text ?? "") };
+                                  onBlur={async (e) => {
+                                    const payload = { ...(b.payload ?? {}), text: e.target.value };
                                     try {
                                       await saveBlockPayload(b.id, payload);
                                     } catch (e: any) {
@@ -1985,9 +2041,9 @@ function CardModal(props: {
                             {b.type === "link" && (
                               <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 <div>
-                                  <div className="text-xs opacity-70">Название</div>
+                                  <div className={mutedTextClass("text-xs")}>Название</div>
                                   <input
-                                    className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+                                    className={inputClass()}
                                     placeholder="Например: Документ"
                                     value={String(b.payload?.title ?? "")}
                                     onChange={(e) => {
@@ -1997,11 +2053,11 @@ function CardModal(props: {
                                         payload: { ...(x.payload ?? {}), title: v },
                                       }));
                                     }}
-                                    onBlur={async () => {
+                                    onBlur={async (e) => {
                                       try {
                                         await saveBlockPayload(b.id, {
                                           ...(b.payload ?? {}),
-                                          title: String(b.payload?.title ?? ""),
+                                          title: String(e.target.value ?? ""),
                                         });
                                       } catch (e: any) {
                                         showError("Не удалось сохранить ссылку", humanizeError(e?.message ?? e));
@@ -2010,9 +2066,9 @@ function CardModal(props: {
                                   />
                                 </div>
                                 <div>
-                                  <div className="text-xs opacity-70">URL</div>
+                                  <div className={mutedTextClass("text-xs")}>URL</div>
                                   <input
-                                    className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+                                    className={inputClass()}
                                     placeholder="https://..."
                                     value={String(b.payload?.url ?? "")}
                                     onChange={(e) => {
@@ -2022,9 +2078,9 @@ function CardModal(props: {
                                         payload: { ...(x.payload ?? {}), url: v },
                                       }));
                                     }}
-                                    onBlur={async () => {
+                                    onBlur={async (e) => {
                                       try {
-                                        await saveBlockPayload(b.id, { ...(b.payload ?? {}), url: String(b.payload?.url ?? "") });
+                                        await saveBlockPayload(b.id, { ...(b.payload ?? {}), url: String(e.target.value ?? "") });
                                       } catch (e: any) {
                                         showError("Не удалось сохранить ссылку", humanizeError(e?.message ?? e));
                                       }
@@ -2037,12 +2093,12 @@ function CardModal(props: {
                                     <a
                                       href={String(b.payload?.url ?? "")}
                                       target="_blank"
-                                      className="inline-flex items-center gap-2 text-sm underline opacity-90"
+                                      className="inline-flex items-center gap-2 text-sm underline text-[rgb(var(--fg))] dark:text-white"
                                     >
                                       🔗 {String(b.payload?.title ?? "Открыть ссылку")}
                                     </a>
                                   ) : (
-                                    <div className="text-sm opacity-60">Укажи URL, чтобы ссылка стала кликабельной.</div>
+                                    <div className={mutedTextClass("text-sm opacity-60")}>Укажи URL, чтобы ссылка стала кликабельной.</div>
                                   )}
                                 </div>
                               </div>
@@ -2072,14 +2128,18 @@ function CardModal(props: {
                             {b.type === "attachment" && (
                               <div className="mt-3">
                                 {b.attachment ? (
-                                  <a href={publicUrl(b.attachment.bucket, b.attachment.path)} target="_blank" className="block rounded-xl border overflow-hidden">
+                                  <a
+                                    href={publicUrl(b.attachment.bucket, b.attachment.path)}
+                                    target="_blank"
+                                    className="block rounded-xl border overflow-hidden"
+                                  >
                                     <img
                                       src={publicUrl(b.attachment.bucket, b.attachment.path)}
                                       className="w-full max-h-[420px] object-contain bg-black/5 dark:bg-white/5"
                                     />
                                   </a>
                                 ) : (
-                                  <div className="text-sm opacity-70">
+                                  <div className={mutedTextClass("text-sm")}>
                                     Фото не найдено. Если ты удалял фото раньше, этот блок будет автоматически очищен при открытии карточки.
                                   </div>
                                 )}
@@ -2091,23 +2151,23 @@ function CardModal(props: {
                   )}
                 </div>
 
-                <div className="mt-6 text-sm opacity-80">
+                <div className={strongTextClass("mt-6 text-sm opacity-80")}>
                   Подзадачи: <span className="font-semibold">{overallChecklist.done}</span>/{overallChecklist.total}
                 </div>
 
-                <div className="mt-3 text-sm opacity-70">Таймер: {fmtSeconds(timerTotal)} (таймер сделаем следующим шагом)</div>
+                <div className={mutedTextClass("mt-3 text-sm")}>Таймер: {fmtSeconds(timerTotal)} (таймер сделаем следующим шагом)</div>
               </div>
             )}
 
             {tab === "files" && (
               <div className="mt-3">
-                <div className="rounded-2xl border p-3">
-                  <div className="text-sm font-semibold">Добавить фото</div>
-                  <div className="text-sm opacity-70 mt-1">
+                <div className={cardSurfaceClass("p-3")}>
+                  <div className={strongTextClass("text-sm font-semibold")}>Добавить фото</div>
+                  <div className={mutedTextClass("text-sm mt-1")}>
                     Фото сохраняются в bucket <b>card-attachments</b> и добавляются как блок.
                   </div>
                   <input
-                    className="mt-3"
+                    className="mt-3 text-[rgb(var(--fg))] dark:text-white"
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
@@ -2117,16 +2177,16 @@ function CardModal(props: {
                     }}
                     disabled={!cardId}
                   />
-                  <div className="mt-2 text-xs opacity-60">
+                  <div className={mutedTextClass("mt-2 text-xs opacity-60")}>
                     Совет: если файл с кириллицей в названии (например “йоу.jpg”) - мы теперь автоматически переименовываем его при загрузке.
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-2xl border p-3">
-                  <div className="font-semibold">Все загруженные фото</div>
+                <div className={cardSurfaceClass("mt-4 p-3")}>
+                  <div className={strongTextClass("font-semibold")}>Все загруженные фото</div>
                   <div className="mt-3 grid grid-cols-2 lg:grid-cols-3 gap-3">
                     {attachments.length === 0 ? (
-                      <div className="text-sm opacity-70">Пока нет фото.</div>
+                      <div className={mutedTextClass("text-sm")}>Пока нет фото.</div>
                     ) : (
                       attachments.map((a) => (
                         <div key={a.id} className="relative rounded-xl border overflow-hidden">
@@ -2135,7 +2195,7 @@ function CardModal(props: {
                           </a>
 
                           <button
-                            className="absolute top-2 right-2 rounded-lg border bg-[rgb(var(--card))] px-2 py-1 text-xs hover:bg-red-500/10"
+                            className={iconButtonClass("absolute top-2 right-2 bg-[rgb(var(--card))]")}
                             title="Удалить фото"
                             onClick={(e) => {
                               e.preventDefault();
@@ -2151,7 +2211,7 @@ function CardModal(props: {
                   </div>
 
                   {attachments.length > 0 && (
-                    <div className="mt-3 text-xs opacity-70">
+                    <div className={mutedTextClass("mt-3 text-xs")}>
                       Подсказка: удаление фото удалит его из карточки полностью (и все блоки, которые на него ссылаются).
                     </div>
                   )}
@@ -2160,34 +2220,46 @@ function CardModal(props: {
             )}
           </div>
 
-          {/* RIGHT */}
           <div className="border-l min-h-0 flex flex-col">
             <div className="p-4 border-b">
-              <div className="font-semibold">Комментарии</div>
-              {!cardId && <div className="text-xs opacity-70 mt-1">Создай карточку, чтобы писать комментарии.</div>}
+              <div className={strongTextClass("font-semibold")}>Комментарии</div>
+              {!cardId && <div className={mutedTextClass("text-xs mt-1")}>Создай карточку, чтобы писать комментарии.</div>}
             </div>
 
             <div className="flex-1 p-4 overflow-auto space-y-3">
               {comments.length === 0 ? (
-                <div className="text-sm opacity-70">Пока нет комментариев.</div>
+                <div className={mutedTextClass("text-sm")}>Пока нет комментариев.</div>
               ) : (
                 comments.map((c) => {
                   const imgs = commentAttachments.filter((x) => x.comment_id === c.id);
                   return (
-                    <div key={c.id} className="rounded-xl border p-3">
-                      <div className="text-xs opacity-70">{new Date(c.created_at).toLocaleString()}</div>
-                      <div className="mt-2 whitespace-pre-wrap">{c.body}</div>
+                    <div
+                      key={c.id}
+                      className={cardSurfaceClass("rounded-xl p-3 text-slate-950 dark:text-white")}
+                    >
+                      <div className="text-xs text-slate-600 dark:text-white/70">
+                        {new Date(c.created_at).toLocaleString()}
+                      </div>
+
+                      <div className="mt-2 whitespace-pre-wrap break-words text-slate-950 dark:text-white">
+                        {c.body}
+                      </div>
 
                       <div className="mt-3 flex flex-wrap gap-2">
                         {imgs.map((img) => (
-                          <a key={img.id} href={publicUrl(img.bucket, img.path)} target="_blank" className="rounded-lg border overflow-hidden">
+                          <a
+                            key={img.id}
+                            href={publicUrl(img.bucket, img.path)}
+                            target="_blank"
+                            className="rounded-lg border overflow-hidden"
+                          >
                             <img src={publicUrl(img.bucket, img.path)} className="w-24 h-24 object-cover" />
                           </a>
                         ))}
                       </div>
 
                       <div className="mt-3">
-                        <label className="text-xs underline cursor-pointer">
+                        <label className="text-xs underline cursor-pointer text-slate-800 dark:text-white">
                           + картинка
                           <input
                             type="file"
@@ -2208,18 +2280,15 @@ function CardModal(props: {
             </div>
 
             <div className="p-4 border-t">
-              <textarea
-                className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none min-h-[90px]"
+              <AutoSizeTextarea
+                className={inputClass("resize-none overflow-hidden whitespace-pre-wrap break-words")}
+                minRows={4}
                 placeholder={cardId ? "Написать комментарий..." : "Сначала создай карточку"}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 disabled={!cardId}
               />
-              <button
-                className="mt-2 w-full rounded-xl bg-black text-white py-2 disabled:opacity-60 dark:bg-white dark:text-black"
-                onClick={addComment}
-                disabled={!cardId}
-              >
+              <button className={primaryButtonClass("mt-2 w-full", !cardId)} onClick={addComment} disabled={!cardId}>
                 Отправить
               </button>
             </div>
@@ -2242,15 +2311,10 @@ function CardModal(props: {
 function ChecklistBlock(props: {
   block: CardBlock;
   onRename: (title: string) => void;
-
   onAddItem: (text: string) => void;
   onToggle: (itemId: string, next: boolean) => void;
-
-  // ✅ локальное редактирование текста пункта (чтобы можно было печатать сразу)
   onChangeItemText: (itemId: string, text: string) => void;
-  // ✅ сохранение на blur (без кнопок)
   onSaveItemText: (itemId: string, text: string) => void;
-
   onDeleteItem: (itemId: string) => void;
   onMoveItem: (itemId: string, dir: "up" | "down") => void;
 }) {
@@ -2268,31 +2332,33 @@ function ChecklistBlock(props: {
   const total = items.length;
 
   return (
-    <div className="mt-3">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-2 items-end">
-        <div>
-          <div className="text-xs opacity-70">Название чеклиста</div>
-          <input
-            className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none font-semibold"
+    <div className="mt-3 text-[rgb(var(--fg))] dark:text-white">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-2 items-start">
+        <div className="min-w-0">
+          <div className={mutedTextClass("text-xs")}>Название чеклиста</div>
+          <AutoSizeTextarea
+            className={inputClass("font-semibold resize-none overflow-hidden whitespace-pre-wrap break-words")}
+            minRows={1}
             value={titleDraft}
             onChange={(e) => setTitleDraft(e.target.value)}
             onBlur={() => props.onRename(titleDraft.trim() || "Чеклист")}
           />
         </div>
 
-        <div className="text-sm opacity-80 lg:text-right">
+        <div className={strongTextClass("text-sm opacity-80 lg:text-right lg:pt-8")}>
           Прогресс: <span className="font-semibold">{done}</span>/{total}
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <input
-          className="flex-1 rounded-xl border px-3 py-2 bg-transparent outline-none"
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-start">
+        <AutoSizeTextarea
+          className={inputClass("resize-none overflow-hidden whitespace-pre-wrap break-words")}
+          minRows={1}
           placeholder="Новый пункт..."
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               const v = newItem.trim();
               if (!v) return;
@@ -2302,7 +2368,7 @@ function ChecklistBlock(props: {
           }}
         />
         <button
-          className="rounded-xl bg-black text-white px-4 py-2 text-sm dark:bg-white dark:text-black"
+          className={primaryButtonClass()}
           onClick={() => {
             const v = newItem.trim();
             if (!v) return;
@@ -2316,31 +2382,39 @@ function ChecklistBlock(props: {
 
       <div className="mt-3 space-y-2">
         {items.length === 0 ? (
-          <div className="text-sm opacity-70">Пока нет пунктов.</div>
+          <div className={mutedTextClass("text-sm")}>Пока нет пунктов.</div>
         ) : (
           items.map((it) => (
-            <div key={it.id} className="rounded-xl border p-2 flex items-start gap-2">
-              <input type="checkbox" className="mt-1" checked={it.is_done} onChange={(e) => props.onToggle(it.id, e.target.checked)} />
-
-              <div className="flex-1">
+            <div key={it.id} className={cardSurfaceClass("rounded-xl p-2")}>
+              <div className="flex items-start gap-2">
                 <input
-                  className="w-full rounded-lg border px-2 py-1 bg-transparent outline-none"
-                  value={it.text}
-                  onChange={(e) => props.onChangeItemText(it.id, e.target.value)}
-                  onBlur={(e) => props.onSaveItemText(it.id, (e.target as any).value)}
+                  type="checkbox"
+                  className="mt-2 shrink-0 accent-sky-500"
+                  checked={it.is_done}
+                  onChange={(e) => props.onToggle(it.id, e.target.checked)}
                 />
-              </div>
 
-              <div className="flex items-center gap-1">
-                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => props.onMoveItem(it.id, "up")} title="Вверх">
-                  ↑
-                </button>
-                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => props.onMoveItem(it.id, "down")} title="Вниз">
-                  ↓
-                </button>
-                <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => props.onDeleteItem(it.id)} title="Удалить">
-                  ✕
-                </button>
+                <div className="flex-1 min-w-0">
+                  <AutoSizeTextarea
+                    className={inputClass("rounded-lg px-2 py-2 resize-none overflow-hidden whitespace-pre-wrap break-words")}
+                    minRows={1}
+                    value={it.text}
+                    onChange={(e) => props.onChangeItemText(it.id, e.target.value)}
+                    onBlur={(e) => props.onSaveItemText(it.id, e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button className={iconButtonClass()} onClick={() => props.onMoveItem(it.id, "up")} title="Вверх">
+                    ↑
+                  </button>
+                  <button className={iconButtonClass()} onClick={() => props.onMoveItem(it.id, "down")} title="Вниз">
+                    ↓
+                  </button>
+                  <button className={iconButtonClass()} onClick={() => props.onDeleteItem(it.id)} title="Удалить">
+                    ✕
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -2350,15 +2424,59 @@ function ChecklistBlock(props: {
   );
 }
 
-function Tab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function AutoSizeTextarea(
+  props: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    minRows?: number;
+    maxRows?: number;
+  }
+) {
+  const { minRows = 1, maxRows, className = "", style, value, ...rest } = props;
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+
+    el.style.height = "auto";
+
+    const computed = window.getComputedStyle(el);
+    const lineHeight = Number.parseFloat(computed.lineHeight || "20") || 20;
+    const borderTop = Number.parseFloat(computed.borderTopWidth || "0") || 0;
+    const borderBottom = Number.parseFloat(computed.borderBottomWidth || "0") || 0;
+    const paddingTop = Number.parseFloat(computed.paddingTop || "0") || 0;
+    const paddingBottom = Number.parseFloat(computed.paddingBottom || "0") || 0;
+
+    const minHeight = Math.max(1, minRows) * lineHeight + paddingTop + paddingBottom + borderTop + borderBottom;
+    const maxHeight =
+      maxRows && maxRows > 0
+        ? maxRows * lineHeight + paddingTop + paddingBottom + borderTop + borderBottom
+        : Number.POSITIVE_INFINITY;
+
+    const nextHeight = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight);
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
+
+  useEffect(() => {
+    resize();
+  }, [value, minRows, maxRows]);
+
   return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl border px-3 py-2 text-sm ${
-        active ? "bg-black text-white dark:bg-white dark:text-black" : "hover:bg-black/5 dark:hover:bg-white/10"
-      }`}
-    >
-      {label}
-    </button>
+    <textarea
+      {...rest}
+      ref={ref}
+      value={value}
+      rows={minRows}
+      style={{ ...style }}
+      className={className}
+      onInput={(e) => {
+        resize();
+        props.onInput?.(e);
+      }}
+    />
   );
+}
+
+function Tab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return <button onClick={onClick} className={active ? primaryButtonClass() : softButtonClass()}>{label}</button>;
 }

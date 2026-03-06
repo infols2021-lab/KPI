@@ -1,3 +1,4 @@
+// src/app/app/[workspaceId]/year/[year]/projects/ui.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,6 +9,41 @@ type Project = {
   description: string | null;
   created_at: string;
 };
+
+function softButtonClass() {
+  return [
+    "rounded-xl px-3 py-2 text-sm transition-all duration-200",
+    "border border-[rgb(var(--border))]",
+    "bg-white/90 text-[rgb(var(--fg))]",
+    "hover:-translate-y-[1px] hover:bg-sky-50 hover:border-sky-300/70 hover:shadow-[0_10px_24px_rgba(56,189,248,0.14)]",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70",
+    "dark:bg-transparent dark:text-[rgb(var(--fg))] dark:hover:bg-white/10 dark:hover:border-[rgb(var(--border))] dark:hover:shadow-none",
+  ].join(" ");
+}
+
+function primaryButtonClass(disabled = false, full = false) {
+  return [
+    full ? "w-full" : "",
+    "rounded-xl px-4 py-2 font-medium transition-all duration-200",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70",
+    disabled
+      ? "bg-slate-200 text-slate-500 border border-slate-200 cursor-not-allowed dark:bg-white/15 dark:text-white/45 dark:border-white/10"
+      : "bg-sky-100 text-sky-950 border border-sky-200 shadow-[0_10px_24px_rgba(56,189,248,0.18)] hover:-translate-y-[1px] hover:bg-sky-200 hover:shadow-[0_14px_30px_rgba(56,189,248,0.24)] dark:bg-white dark:text-black dark:border-white dark:shadow-none dark:hover:bg-white/90 dark:hover:shadow-none",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function inputClass(extra?: string) {
+  return [
+    "w-full rounded-xl border px-3 py-2 bg-transparent outline-none transition-all duration-200",
+    "hover:border-sky-300/70",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70",
+    extra ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 export default function ProjectsClient({ workspaceId, year }: { workspaceId: string; year: number }) {
   const [items, setItems] = useState<Project[]>([]);
@@ -125,7 +161,7 @@ export default function ProjectsClient({ workspaceId, year }: { workspaceId: str
           </div>
         </div>
 
-        <a className="text-sm underline opacity-80" href={`/app/${workspaceId}/year/${year}`}>
+        <a className={softButtonClass()} href={`/app/${workspaceId}/year/${year}`}>
           Назад
         </a>
       </div>
@@ -138,21 +174,21 @@ export default function ProjectsClient({ workspaceId, year }: { workspaceId: str
 
           <div className="mt-3 space-y-3">
             <input
-              className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+              className={inputClass()}
               placeholder="Название (обязательно)"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
 
             <textarea
-              className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none min-h-[110px]"
+              className={inputClass("min-h-[110px] resize-y")}
               placeholder="Описание (необязательно)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
 
             <button
-              className="w-full rounded-xl bg-black text-white py-2 font-medium disabled:opacity-60 dark:bg-white dark:text-black"
+              className={primaryButtonClass(loading || !name.trim(), true)}
               disabled={loading || !name.trim()}
               onClick={create}
             >
@@ -162,9 +198,9 @@ export default function ProjectsClient({ workspaceId, year }: { workspaceId: str
         </div>
 
         <div className="rounded-2xl border bg-[rgb(var(--card))] p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="font-semibold">Список проектов</div>
-            <button className="text-sm underline" onClick={load} disabled={loading}>
+            <button className={softButtonClass()} onClick={load} disabled={loading}>
               Обновить
             </button>
           </div>
@@ -174,10 +210,13 @@ export default function ProjectsClient({ workspaceId, year }: { workspaceId: str
               <div className="text-sm opacity-70">Пока нет проектов.</div>
             ) : (
               items.map((p) => (
-                <div key={p.id} className="rounded-xl border p-3">
+                <div
+                  key={p.id}
+                  className="rounded-xl border p-3 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(56,189,248,0.12)] dark:hover:shadow-none"
+                >
                   <div className="grid grid-cols-1 gap-2">
                     <input
-                      className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none font-semibold"
+                      className={inputClass("font-semibold")}
                       value={p.name}
                       onChange={(e) =>
                         setItems((prev) =>
@@ -187,7 +226,7 @@ export default function ProjectsClient({ workspaceId, year }: { workspaceId: str
                     />
 
                     <textarea
-                      className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none min-h-[90px]"
+                      className={inputClass("min-h-[90px] resize-y")}
                       value={p.description ?? ""}
                       onChange={(e) =>
                         setItems((prev) =>
@@ -196,15 +235,15 @@ export default function ProjectsClient({ workspaceId, year }: { workspaceId: str
                       }
                     />
 
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <button
-                        className="rounded-xl bg-black text-white px-4 py-2 text-sm dark:bg-white dark:text-black"
+                        className={primaryButtonClass(loading, false)}
                         disabled={loading}
                         onClick={() => save(p)}
                       >
                         Сохранить
                       </button>
-                      <button className="text-sm underline" disabled={loading} onClick={() => remove(p.id)}>
+                      <button className={softButtonClass()} disabled={loading} onClick={() => remove(p.id)}>
                         Удалить
                       </button>
                     </div>

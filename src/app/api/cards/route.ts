@@ -32,14 +32,26 @@ function normalizeDeadline(input: any): string | null | "__INVALID__" {
   return new Date(t).toISOString();
 }
 
+type FreezeSystemKey = "accepted" | "done" | null;
+
 async function getColumnSystemKey(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   columnId: string
-): Promise<"accepted" | "done" | null> {
-  const { data, error } = await supabase.from("board_columns").select("system_key").eq("id", columnId).single();
+): Promise<FreezeSystemKey> {
+  const { data, error } = await supabase
+    .from("board_columns")
+    .select("system_key")
+    .eq("id", columnId)
+    .single();
+
   if (error) throw new Error(error.message);
+
   const key = data?.system_key ?? null;
   return key === "accepted" || key === "done" ? key : null;
+}
+
+function isFreezeKey(key: FreezeSystemKey) {
+  return key === "accepted" || key === "done";
 }
 
 export async function POST(req: Request) {
@@ -68,11 +80,10 @@ export async function POST(req: Request) {
     return jsonError("workspaceId/boardId/columnId/title/projectId required", 400);
   }
 
-  // если создают сразу в системной колонке accepted/done — фиксируем timestamp сдачи
   let acceptedAt: string | null = null;
   try {
     const sys = await getColumnSystemKey(supabase, columnId);
-    if (sys === "accepted" || sys === "done") acceptedAt = nowIso();
+    if (isFreezeKey(sys)) acceptedAt = nowIso();
   } catch (e: any) {
     return jsonError(e?.message ?? "Failed to read column", 500);
   }
@@ -132,7 +143,9 @@ export async function PATCH(req: Request) {
     patch.deadline = deadlineNorm ? deadlineNorm : null;
   }
 
-  if (body.projectId !== undefined) patch.project_id = body.projectId ? String(body.projectId) : null;
+  if (body.projectId !== undefined) {
+    patch.project_id = body.projectId ? String(body.projectId) : null;
+  }
 
   if (body.difficultyId !== undefined) {
     patch.difficulty_id = body.difficultyId ? String(body.difficultyId) : null;
@@ -142,22 +155,48 @@ export async function PATCH(req: Request) {
     patch.quality_level_id = body.qualityLevelId ? String(body.qualityLevelId) : null;
   }
 
-  // ✅ фиксация accepted_at ТОЛЬКО при реальном переходе карточки в системную колонку accepted/done
   if (body.columnId !== undefined) {
     const newColumnId = String(body.columnId);
 
-    const { data: cur, error: curErr } = await supabase.from("cards").select("column_id").eq("id", id).single();
+    const { data: cur, error: curErr } = await supabase
+      .from("cards")
+      .select("column_id, accepted_at")
+      .eq("id", id)
+      .single();
+
     if (curErr) return jsonError(curErr.message, 500);
 
     const oldColumnId = String(cur?.column_id ?? "");
+    const oldAcceptedAt = cur?.accepted_at ? String(cur.accepted_at) : null;
+
     patch.column_id = newColumnId;
 
     if (oldColumnId && newColumnId && oldColumnId !== newColumnId) {
       try {
-        const sys = await getColumnSystemKey(supabase, newColumnId);
-        if (sys === "accepted" || sys === "done") {
+        const [oldSys, newSys] = await Promise.all([
+          getColumnSystemKey(supabase, oldColumnId),
+          getColumnSystemKey(supabase, newColumnId),
+        ]);
+
+        const oldIsFreeze = isFreezeKey(oldSys);
+        const newIsFreeze = isFreezeKey(newSys);
+
+        // обычная -> accepted/done => фиксируем новое время
+        if (!oldIsFreeze && newIsFreeze) {
           patch.accepted_at = nowIso();
         }
+
+        // accepted/done -> accepted/done => СОХРАНЯЕМ старое время
+        else if (oldIsFreeze && newIsFreeze) {
+          patch.accepted_at = oldAcceptedAt ?? nowIso();
+        }
+
+        // accepted/done -> обычная => сбрасываем, чтобы при следующем входе зафиксировалось заново
+        else if (oldIsFreeze && !newIsFreeze) {
+          patch.accepted_at = null;
+        }
+
+        // обычная -> обычная => ничего не делаем
       } catch (e: any) {
         return jsonError(e?.message ?? "Failed to read column", 500);
       }
@@ -188,11 +227,16 @@ export async function DELETE(req: Request) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return jsonError("Unauthorized", 401);
 
-  // 0) соберём все файлы (attachments + comment attachments), чтобы попытаться удалить из storage
-  const { data: atts, error: attsErr } = await supabase.from("card_attachments").select("bucket, path").eq("card_id", id);
+  const { data: atts, error: attsErr } = await supabase
+    .from("card_attachments")
+    .select("bucket, path")
+    .eq("card_id", id);
   if (attsErr) return jsonError(attsErr.message, 500);
 
-  const { data: comms, error: commErr } = await supabase.from("card_comments").select("id").eq("card_id", id);
+  const { data: comms, error: commErr } = await supabase
+    .from("card_comments")
+    .select("id")
+    .eq("card_id", id);
   if (commErr) return jsonError(commErr.message, 500);
 
   const commentIds = (comms ?? []).map((x: any) => x.id).filter(Boolean);
@@ -208,7 +252,6 @@ export async function DELETE(req: Request) {
     commAtts = (ca ?? []) as any;
   }
 
-  // ✅ попытка удалить файлы из storage (не ломаем удаление карточки, если политики не дают)
   try {
     const byBucket = groupPathsByBucket([...(atts ?? []), ...(commAtts ?? [])] as any);
     for (const [bucket, paths] of byBucket.entries()) {
@@ -219,13 +262,14 @@ export async function DELETE(req: Request) {
     // ignore
   }
 
-  // 1) comment attachments (через comments)
   if (commentIds.length > 0) {
-    const { error: caDelErr } = await supabase.from("card_comment_attachments").delete().in("comment_id", commentIds);
+    const { error: caDelErr } = await supabase
+      .from("card_comment_attachments")
+      .delete()
+      .in("comment_id", commentIds);
     if (caDelErr) return jsonError(caDelErr.message, 500);
   }
 
-  // 2) child tables
   const del1 = await supabase.from("card_comments").delete().eq("card_id", id);
   if (del1.error) return jsonError(del1.error.message, 500);
 
@@ -241,7 +285,6 @@ export async function DELETE(req: Request) {
   const del5 = await supabase.from("card_blocks").delete().eq("card_id", id);
   if (del5.error) return jsonError(del5.error.message, 500);
 
-  // 3) finally card
   const { error } = await supabase.from("cards").delete().eq("id", id);
   if (error) return jsonError(error.message, 500);
 

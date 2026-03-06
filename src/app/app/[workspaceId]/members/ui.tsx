@@ -1,3 +1,4 @@
+// src/app/app/[workspaceId]/members/ui.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -33,6 +34,35 @@ async function fetchJson(url: string, init?: RequestInit) {
 function shortId(id: string) {
   if (!id) return id;
   return id.slice(0, 8) + "…" + id.slice(-6);
+}
+
+function softButtonClass() {
+  return [
+    "rounded-xl px-3 py-2 text-sm transition-all duration-200",
+    "border border-[rgb(var(--border))]",
+    "bg-white/90 text-[rgb(var(--fg))]",
+    "hover:-translate-y-[1px] hover:bg-sky-50 hover:border-sky-300/70 hover:shadow-[0_10px_24px_rgba(56,189,248,0.14)]",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70",
+    "dark:bg-transparent dark:text-[rgb(var(--fg))] dark:hover:bg-white/10 dark:hover:border-[rgb(var(--border))] dark:hover:shadow-none",
+  ].join(" ");
+}
+
+function primaryButtonClass(disabled = false) {
+  return [
+    "rounded-xl px-4 py-2 font-medium transition-all duration-200",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70",
+    disabled
+      ? "bg-slate-200 text-slate-500 border border-slate-200 cursor-not-allowed dark:bg-white/15 dark:text-white/45 dark:border-white/10"
+      : "bg-sky-100 text-sky-950 border border-sky-200 shadow-[0_10px_24px_rgba(56,189,248,0.18)] hover:-translate-y-[1px] hover:bg-sky-200 hover:shadow-[0_14px_30px_rgba(56,189,248,0.24)] dark:bg-white dark:text-black dark:border-white dark:shadow-none dark:hover:bg-white/90 dark:hover:shadow-none",
+  ].join(" ");
+}
+
+function selectClass() {
+  return [
+    "rounded-xl border px-3 py-2 bg-transparent outline-none text-sm transition-all duration-200",
+    "hover:border-sky-300/70",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70",
+  ].join(" ");
 }
 
 export default function MembersClient({ workspaceId }: { workspaceId: string }) {
@@ -178,15 +208,15 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
           <div className="text-xs opacity-70">Workspace</div>
           <h1 className="text-2xl font-semibold">Участники</h1>
           <div className="text-sm opacity-70 mt-1">
-            Добавляй людей по ссылке. Если указать email — принять сможет только владелец этого email.
+            Добавляй людей по ссылке. Если указать email - принять сможет только владелец этого email.
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button className="rounded-xl border px-4 py-2" onClick={loadAll} disabled={loading}>
+        <div className="flex gap-2 flex-wrap">
+          <button className={softButtonClass()} onClick={loadAll} disabled={loading}>
             Обновить
           </button>
-          <a className="rounded-xl border px-4 py-2" href={`/app/${workspaceId}/years`}>
+          <a className={softButtonClass()} href={`/app/${workspaceId}/years`}>
             Назад
           </a>
         </div>
@@ -195,13 +225,12 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
       {msg && <div className="mt-4 text-sm">{msg}</div>}
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* INVITES */}
         <div className="rounded-2xl border bg-[rgb(var(--card))] p-4">
           <div className="font-semibold">Приглашения</div>
 
           <div className="mt-3 grid grid-cols-1 gap-3">
             <input
-              className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+              className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none transition-all duration-200 hover:border-sky-300/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70"
               placeholder="Email (необязательно)"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
@@ -209,16 +238,16 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select
-                className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+                className={selectClass()}
                 value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as any)}
+                onChange={(e) => setInviteRole(e.target.value as "member" | "admin")}
               >
                 <option value="member">member</option>
                 <option value="admin">admin</option>
               </select>
 
               <input
-                className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none"
+                className="w-full rounded-xl border px-3 py-2 bg-transparent outline-none transition-all duration-200 hover:border-sky-300/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70"
                 value={expiresDays}
                 onChange={(e) => setExpiresDays(e.target.value)}
                 placeholder="Срок (дней)"
@@ -226,7 +255,7 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
             </div>
 
             <button
-              className="rounded-xl bg-black text-white px-4 py-2 font-medium disabled:opacity-60"
+              className={primaryButtonClass(loading)}
               onClick={createInvite}
               disabled={loading}
             >
@@ -250,8 +279,12 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
               ) : (
                 invites.map((it) => {
                   const pending = !it.accepted_at && !it.revoked_at;
+
                   return (
-                    <div key={it.id} className="rounded-xl border p-3">
+                    <div
+                      key={it.id}
+                      className="rounded-xl border p-3 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(56,189,248,0.12)] dark:hover:shadow-none"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="font-semibold truncate">
@@ -260,15 +293,13 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
                           <div className="text-xs opacity-70 mt-1">
                             роль: {it.role} • истекает: {new Date(it.expires_at).toLocaleString()}
                           </div>
-                          <div className="text-xs opacity-70 mt-1">
-                            token: {shortId(it.token)}
-                          </div>
+                          <div className="text-xs opacity-70 mt-1">token: {shortId(it.token)}</div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
                           {it.invite_url && (
                             <button
-                              className="rounded-xl border px-3 py-2 text-sm"
+                              className={softButtonClass()}
                               onClick={async () => {
                                 try {
                                   await navigator.clipboard.writeText(it.invite_url!);
@@ -284,7 +315,7 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
 
                           {pending ? (
                             <button
-                              className="rounded-xl border px-3 py-2 text-sm"
+                              className={softButtonClass()}
                               onClick={() => revokeInvite(it.token)}
                               disabled={loading}
                             >
@@ -305,7 +336,6 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
           </div>
         </div>
 
-        {/* MEMBERS */}
         <div className="rounded-2xl border bg-[rgb(var(--card))] p-4">
           <div className="font-semibold">Участники</div>
 
@@ -315,25 +345,27 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
             ) : (
               members.map((m) => {
                 const isMe = me && m.user_id === me;
+
                 return (
-                  <div key={m.user_id} className="rounded-xl border p-3">
+                  <div
+                    key={m.user_id}
+                    className="rounded-xl border p-3 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(56,189,248,0.12)] dark:hover:shadow-none"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold truncate">
-                          {isMe ? "Ты" : shortId(m.user_id)}
-                        </div>
+                        <div className="font-semibold truncate">{isMe ? "Ты" : shortId(m.user_id)}</div>
                         <div className="text-xs opacity-70 mt-1">
                           роль: {m.role} • joined: {new Date(m.joined_at).toLocaleString()}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
                         {!isMe && m.role !== "owner" && (
                           <>
                             <select
-                              className="rounded-xl border px-2 py-2 bg-transparent outline-none text-sm"
+                              className={selectClass()}
                               value={m.role === "admin" ? "admin" : "member"}
-                              onChange={(e) => changeRole(m.user_id, e.target.value as any)}
+                              onChange={(e) => changeRole(m.user_id, e.target.value as "admin" | "member")}
                               disabled={loading}
                             >
                               <option value="member">member</option>
@@ -341,7 +373,7 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
                             </select>
 
                             <button
-                              className="rounded-xl border px-3 py-2 text-sm"
+                              className={softButtonClass()}
                               onClick={() => removeMember(m.user_id)}
                               disabled={loading}
                             >
@@ -352,7 +384,7 @@ export default function MembersClient({ workspaceId }: { workspaceId: string }) 
 
                         {isMe && m.role !== "owner" && (
                           <button
-                            className="rounded-xl border px-3 py-2 text-sm"
+                            className={softButtonClass()}
                             onClick={() => removeMember(m.user_id)}
                             disabled={loading}
                           >

@@ -1,4 +1,3 @@
-// src/app/app/[workspaceId]/years/ui.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -23,11 +22,9 @@ type DifficultyRow = Difficulty & { pointsInput: string };
 type QualityRow = Quality & { coefInput: string };
 
 function normDecimalInput(raw: string) {
-  // Разрешаем "1,3" / "1.3" / ".5" / "0,"
   let v = String(raw ?? "");
-  // оставляем цифры + . ,
   v = v.replace(/[^\d.,]/g, "");
-  // если есть и , и . -> оставим только первый разделитель (какой встретился раньше)
+
   const comma = v.indexOf(",");
   const dot = v.indexOf(".");
   let sep = -1;
@@ -37,7 +34,7 @@ function normDecimalInput(raw: string) {
   if (sep !== -1) {
     const before = v.slice(0, sep);
     const after = v.slice(sep + 1).replace(/[.,]/g, "");
-    const chosen = v[sep]; // "," или "."
+    const chosen = v[sep];
     v = before + chosen + after;
   } else {
     v = v.replace(/[.,]/g, "");
@@ -50,7 +47,6 @@ function normDecimalInput(raw: string) {
 function parseDecimal(input: string): number | null {
   const s = String(input ?? "").trim().replace(",", ".");
   if (!s) return null;
-  // разрешим ".5"
   const normalized = s.startsWith(".") ? `0${s}` : s;
   const n = Number(normalized);
   return Number.isFinite(n) ? n : null;
@@ -90,7 +86,6 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
       setYears(list);
 
       if (!selectedYear && (list?.length ?? 0) > 0) {
-        // по умолчанию последний год (обычно самый новый)
         const last = list.slice().sort((a, b) => a.year - b.year)[list.length - 1];
         setSelectedYear(last.year);
       }
@@ -165,7 +160,6 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
       await fetchJson(`/api/workspaces/year-settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // ✅ шлём оба поля, чтобы не упасть из-за несовпадения названий на сервере
         body: JSON.stringify({ workspaceId, year: selectedYear, point_price: val, pointPrice: val }),
       });
       setPointPrice(normDecimalInput(String(val)));
@@ -267,11 +261,13 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
-      {/* LEFT */}
       <div className="rounded-2xl border bg-[rgb(var(--card))] p-4">
         <div className="flex items-center justify-between">
           <div className="font-semibold">Годы</div>
-          <button className="text-sm underline" onClick={createYear}>
+          <button
+            className="text-sm rounded-xl border px-3 py-2 transition-all duration-200 bg-white/80 text-[rgb(var(--fg))] hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(59,130,246,0.10)] dark:bg-transparent dark:hover:bg-white/10"
+            onClick={createYear}
+          >
             Создать год
           </button>
         </div>
@@ -289,8 +285,10 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                 <button
                   key={y.year}
                   onClick={() => setSelectedYear(y.year)}
-                  className={`w-full text-left rounded-xl border px-3 py-2 ${
-                    selectedYear === y.year ? "bg-black text-white dark:bg-white dark:text-black" : ""
+                  className={`w-full text-left rounded-xl px-4 py-3 border transition-all duration-200 ${
+                    selectedYear === y.year
+                      ? "bg-sky-200/95 text-sky-950 border-sky-500 font-semibold shadow-[0_0_0_1px_rgba(14,165,233,0.18),0_10px_26px_rgba(14,165,233,0.18)] dark:bg-white dark:text-black dark:border-white"
+                      : "bg-white/80 text-[rgb(var(--fg))] hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(59,130,246,0.10)] dark:bg-transparent dark:text-[rgb(var(--fg))] dark:hover:bg-white/10 dark:hover:border-[rgb(var(--border))]"
                   }`}
                 >
                   {y.year}
@@ -300,7 +298,6 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
-      {/* RIGHT */}
       <div className="rounded-2xl border bg-[rgb(var(--card))] p-4">
         {selectedYear == null ? (
           <div className="text-sm opacity-70">Выбери год слева или создай новый.</div>
@@ -311,7 +308,10 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                 <div className="text-xs opacity-70">Настройки года</div>
                 <div className="text-xl font-semibold">{selectedYear}</div>
               </div>
-              <a className="text-sm underline" href={`/app/${workspaceId}/year/${selectedYear}/1`}>
+              <a
+                className="text-sm rounded-xl border px-3 py-2 transition-all duration-200 bg-white/80 text-[rgb(var(--fg))] hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(59,130,246,0.10)] dark:bg-transparent dark:text-[rgb(var(--fg))] dark:hover:bg-white/10 dark:hover:border-[rgb(var(--border))]"
+                href={`/app/${workspaceId}/year/${selectedYear}/1`}
+              >
                 Открыть январь
               </a>
             </div>
@@ -322,7 +322,6 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
               <div className="mt-4 text-sm opacity-70">Загрузка настроек...</div>
             ) : (
               <>
-                {/* Point price */}
                 <div className="mt-4 rounded-xl border p-3">
                   <div className="font-semibold">Цена балла</div>
                   <div className="mt-2 flex flex-wrap items-end gap-3">
@@ -334,14 +333,13 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                         value={pointPrice}
                         onChange={(e) => setPointPrice(normDecimalInput(e.target.value))}
                         onBlur={() => {
-                          // просто приведём к красивому виду, но не сохраняем автоматически
                           const n = parseDecimal(pointPrice);
                           if (n != null) setPointPrice(normDecimalInput(String(n)));
                         }}
                       />
                     </div>
                     <button
-                      className="rounded-xl bg-black text-white px-4 py-2 dark:bg-white dark:text-black"
+                      className="rounded-xl px-4 py-2 border transition-all duration-200 bg-sky-200 text-sky-950 border-sky-500 font-semibold shadow-[0_0_0_1px_rgba(14,165,233,0.18),0_8px_20px_rgba(14,165,233,0.16)] hover:bg-sky-300 hover:-translate-y-[1px] dark:bg-white dark:text-black dark:border-white"
                       onClick={savePointPrice}
                     >
                       Сохранить
@@ -349,11 +347,13 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                   </div>
                 </div>
 
-                {/* Difficulties */}
                 <div className="mt-4 rounded-xl border p-3">
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">Сложности</div>
-                    <button className="text-sm underline" onClick={addDifficulty}>
+                    <button
+                      className="text-sm rounded-xl border px-3 py-2 transition-all duration-200 bg-white/80 text-[rgb(var(--fg))] hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(59,130,246,0.10)] dark:bg-transparent dark:hover:bg-white/10"
+                      onClick={addDifficulty}
+                    >
                       Добавить
                     </button>
                   </div>
@@ -413,7 +413,10 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                             />
                           </div>
 
-                          <button className="text-sm underline" onClick={() => deleteDifficulty(d.id)}>
+                          <button
+                            className="text-sm rounded-xl border px-3 py-2 transition-all duration-200 bg-white/80 text-[rgb(var(--fg))] hover:bg-red-50 hover:border-red-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(239,68,68,0.10)] dark:bg-transparent dark:hover:bg-red-500/10"
+                            onClick={() => deleteDifficulty(d.id)}
+                          >
                             Удалить
                           </button>
                         </div>
@@ -422,11 +425,13 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                   </div>
                 </div>
 
-                {/* Qualities */}
                 <div className="mt-4 rounded-xl border p-3">
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">Качество</div>
-                    <button className="text-sm underline" onClick={addQuality}>
+                    <button
+                      className="text-sm rounded-xl border px-3 py-2 transition-all duration-200 bg-white/80 text-[rgb(var(--fg))] hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(59,130,246,0.10)] dark:bg-transparent dark:hover:bg-white/10"
+                      onClick={addQuality}
+                    >
                       Добавить
                     </button>
                   </div>
@@ -486,7 +491,10 @@ export default function YearsClient({ workspaceId }: { workspaceId: string }) {
                             />
                           </div>
 
-                          <button className="text-sm underline" onClick={() => deleteQuality(q.id)}>
+                          <button
+                            className="text-sm rounded-xl border px-3 py-2 transition-all duration-200 bg-white/80 text-[rgb(var(--fg))] hover:bg-red-50 hover:border-red-300 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(239,68,68,0.10)] dark:bg-transparent dark:hover:bg-red-500/10"
+                            onClick={() => deleteQuality(q.id)}
+                          >
                             Удалить
                           </button>
                         </div>

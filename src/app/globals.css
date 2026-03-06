@@ -4,15 +4,19 @@
    TOKENS
 ========================= */
 :root {
-  --bg: 246 248 255;
+  --bg: 232 242 255;
   --fg: 10 18 34;
-  --card: 255 255 255;
+  --card: 248 252 255;
 
-  --border: 175 192 220;
-  --muted: 66 84 112;
+  --border: 154 182 220;
+  --muted: 61 79 108;
 
-  --accent: 99 102 241;  /* indigo */
-  --accent2: 34 211 238; /* cyan */
+  --accent: 79 70 229;
+  --accent2: 14 165 233;
+
+  --success: 22 163 74;
+  --warn: 217 119 6;
+  --danger: 220 38 38;
 }
 
 .dark {
@@ -25,32 +29,45 @@
 
   --accent: 129 140 248;
   --accent2: 56 189 248;
+
+  --success: 74 222 128;
+  --warn: 251 191 36;
+  --danger: 248 113 113;
 }
 
-/* ✅ 100% фикс нативных select/option в dark */
-html { color-scheme: light; }
-html.dark { color-scheme: dark; }
+/* =========================
+   COLOR-SCHEME / BASE
+========================= */
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
 
-html, body { height: 100%; }
+html.dark {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
 
 body {
   color: rgb(var(--fg));
-  background: rgb(var(--bg));
-
-  background-image:
-    radial-gradient(1200px 720px at 12% 10%, rgba(var(--accent2), 0.16), transparent 60%),
-    radial-gradient(900px 650px at 88% 18%, rgba(var(--accent), 0.14), transparent 60%),
-    radial-gradient(900px 700px at 40% 95%, rgba(34, 211, 238, 0.10), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,0.10), transparent 32%),
-    linear-gradient(to right, rgba(15,23,42,0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15,23,42,0.035) 1px, transparent 1px);
-  background-size: auto, auto, auto, auto, 44px 44px, 44px 44px;
+  background:
+    radial-gradient(1300px 760px at 10% 8%, rgba(var(--accent2), 0.22), transparent 58%),
+    radial-gradient(1000px 760px at 88% 14%, rgba(var(--accent), 0.16), transparent 58%),
+    radial-gradient(1100px 820px at 48% 100%, rgba(56, 189, 248, 0.14), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,0.58), rgba(255,255,255,0.18) 22%, rgba(255,255,255,0.05) 100%),
+    linear-gradient(180deg, rgb(241, 247, 255) 0%, rgb(232, 242, 255) 52%, rgb(226, 238, 252) 100%);
+  background-attachment: fixed;
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .dark body {
+  background: rgb(var(--bg));
   background-image:
     radial-gradient(1200px 720px at 12% 10%, rgba(var(--accent2), 0.14), transparent 60%),
     radial-gradient(900px 650px at 88% 18%, rgba(var(--accent), 0.12), transparent 60%),
@@ -59,38 +76,149 @@ body {
     linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
   background-size: auto, auto, auto, auto, 54px 54px, 54px 54px;
+  background-attachment: scroll;
 }
 
-/* ===== border baseline ===== */
-.border { border-color: rgb(var(--border)); }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-/* ===== readability in light ===== */
-html:not(.dark) .opacity-70 { opacity: 0.92 !important; }
-html:not(.dark) .opacity-60 { opacity: 0.84 !important; }
-html:not(.dark) .opacity-80 { opacity: 0.95 !important; }
+::selection {
+  background: rgba(var(--accent2), 0.22);
+  color: rgb(var(--fg));
+}
+
+.dark ::selection {
+  background: rgba(var(--accent2), 0.28);
+  color: white;
+}
 
 /* =========================
-   SURFACES
+   TYPOGRAPHY / READABILITY
+========================= */
+html:not(.dark) .text-xs,
+html:not(.dark) .text-sm,
+html:not(.dark) .text-base,
+html:not(.dark) .text-lg,
+html:not(.dark) .text-xl,
+html:not(.dark) .text-2xl,
+html:not(.dark) .text-3xl,
+html:not(.dark) .font-semibold,
+html:not(.dark) .font-medium,
+html:not(.dark) .font-bold {
+  color: rgb(var(--fg));
+}
+
+html:not(.dark) .opacity-70 {
+  opacity: 0.94 !important;
+}
+
+html:not(.dark) .opacity-60 {
+  opacity: 0.86 !important;
+}
+
+html:not(.dark) .opacity-80 {
+  opacity: 0.97 !important;
+}
+
+html:not(.dark) .text-white {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .underline {
+  text-decoration-color: rgba(var(--accent), 0.45);
+  text-underline-offset: 3px;
+}
+
+html:not(.dark) .text-red-600 {
+  color: rgb(185 28 28) !important;
+}
+
+html:not(.dark) .text-amber-700 {
+  color: rgb(180 83 9) !important;
+}
+
+html:not(.dark) .text-emerald-700 {
+  color: rgb(4 120 87) !important;
+}
+
+/* =========================
+   BORDER BASELINE
+========================= */
+.border {
+  border-color: rgb(var(--border));
+}
+
+html:not(.dark) .border {
+  border-color: rgba(146, 176, 214, 0.95) !important;
+}
+
+/* =========================
+   GLASS / SURFACES
 ========================= */
 .bg-\[rgb\(var\(--card\)\)\]:not(.kpi-modal-surface) {
-  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.985), rgba(246,250,255,0.96));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
+
 .dark .bg-\[rgb\(var\(--card\)\)\]:not(.kpi-modal-surface) {
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.085), rgba(255,255,255,0.05));
+}
+
+html:not(.dark) .rounded-2xl.border.bg-\[rgb\(var\(--card\)\)\],
+html:not(.dark) .rounded-xl.border.bg-\[rgb\(var\(--card\)\)\],
+html:not(.dark) .rounded-lg.border.bg-\[rgb\(var\(--card\)\)\] {
+  box-shadow:
+    0 18px 42px rgba(37, 99, 235, 0.08),
+    0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+html:not(.dark) .shadow-sm {
+  box-shadow:
+    0 16px 34px rgba(15, 23, 42, 0.08),
+    0 3px 10px rgba(15, 23, 42, 0.04) !important;
 }
 
 /* =========================
-   INPUTS + SELECT
+   LAYOUT POLISH
 ========================= */
+html:not(.dark) .sticky.top-0 {
+  background:
+    linear-gradient(180deg, rgba(247, 251, 255, 0.92), rgba(236, 244, 255, 0.88)) !important;
+  border-bottom-color: rgba(140, 171, 211, 0.95) !important;
+  box-shadow: 0 8px 26px rgba(37, 99, 235, 0.08);
+}
+
+html:not(.dark) .fixed.left-0.border-r.bg-\[rgb\(var\(--card\)\)\] {
+  background:
+    linear-gradient(180deg, rgba(245, 250, 255, 0.98), rgba(237, 246, 255, 0.95)) !important;
+  border-right-color: rgba(140, 171, 211, 0.95) !important;
+  box-shadow: 8px 0 24px rgba(37, 99, 235, 0.05);
+}
+
+/* =========================
+   INPUTS / SELECT / TEXTAREA
+========================= */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
 input.bg-transparent,
 select.bg-transparent,
 textarea.bg-transparent {
-  background-color: rgba(255,255,255,0.86);
+  background-color: rgba(255,255,255,0.92);
   border-color: rgb(var(--border)) !important;
   color: rgb(var(--fg));
 }
+
 .dark input.bg-transparent,
 .dark select.bg-transparent,
 .dark textarea.bg-transparent {
@@ -99,76 +227,252 @@ textarea.bg-transparent {
   color: rgb(var(--fg));
 }
 
-/* option colors fallback */
-select { color: rgb(var(--fg)); }
-select option { color: rgb(var(--fg)); background-color: rgb(var(--card)); }
-.dark select option { color: rgb(var(--fg)); background-color: rgb(var(--card)); }
+html:not(.dark) input.bg-transparent,
+html:not(.dark) select.bg-transparent,
+html:not(.dark) textarea.bg-transparent {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.99), rgba(247, 251, 255, 0.96)) !important;
+  border-color: rgba(143, 173, 212, 1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.82),
+    0 1px 0 rgba(255,255,255,0.36);
+}
+
+html:not(.dark) input.bg-transparent::placeholder,
+html:not(.dark) textarea.bg-transparent::placeholder {
+  color: rgba(70, 90, 120, 0.72);
+}
+
+select {
+  color: rgb(var(--fg));
+}
+
+select option {
+  color: rgb(var(--fg));
+  background-color: rgb(var(--card));
+}
+
+.dark select option {
+  color: rgb(var(--fg));
+  background-color: rgb(var(--card));
+}
+
+input[type="checkbox"] {
+  accent-color: rgb(var(--accent2));
+}
 
 /* =========================
-   ✅ ЖЕЛЕЗОБЕТОН: ACTIVE/SELECTED В LIGHT
-   ВАЖНО: у тебя активные состояния почти везде = bg-black text-white
-   (месяц, тема, кнопки Сохранить/Создать)
-   -> делаем их ВСЕГДА яркими и заметными.
+   ACTIVE / PRIMARY BUTTONS
 ========================= */
 html:not(.dark) :is(button, a).bg-black.text-white,
 html:not(.dark) button.bg-black.text-white,
 html:not(.dark) a.bg-black.text-white {
-  background: linear-gradient(135deg, rgba(var(--accent), 1), rgba(var(--accent2), 0.95)) !important;
-  color: #fff !important;
-  border-color: rgba(var(--accent), 0.48) !important;
+  background:
+    linear-gradient(135deg, rgba(var(--accent), 1), rgba(var(--accent2), 0.96)) !important;
+  color: #ffffff !important;
+  border-color: rgba(var(--accent), 0.52) !important;
   box-shadow:
-    0 14px 32px rgba(var(--accent), 0.22),
-    0 0 0 1px rgba(var(--accent), 0.30) inset !important;
+    0 14px 34px rgba(79, 70, 229, 0.20),
+    0 8px 22px rgba(14, 165, 233, 0.18),
+    0 0 0 1px rgba(255,255,255,0.20) inset !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.08);
 }
+
 html:not(.dark) :is(button, a).bg-black.text-white:hover {
   filter: brightness(1.03);
   transform: translateY(-1px);
 }
+
 html:not(.dark) :is(button, a).bg-black.text-white:active {
   transform: translateY(0);
-  filter: brightness(0.98);
+  filter: brightness(0.985);
 }
 
-/* ✅ чтобы выбранная тема была прям очевидной даже в маленьком переключателе */
 html:not(.dark) :is(button, a).bg-black.text-white {
   border-radius: 12px !important;
+  font-weight: 600;
 }
 
 /* =========================
-   ✅ OUTLINE BUTTONS В LIGHT
-   Чтобы обычные кнопки с border (и "Сохранить" если вдруг не bg-black)
-   никогда не исчезали на белом.
+   OUTLINE BUTTONS
 ========================= */
 html:not(.dark) :is(button, a).border:not(.bg-black) {
-  background: rgba(255,255,255,0.96) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.985), rgba(243,248,255,0.95)) !important;
   color: rgb(var(--fg)) !important;
-  border-color: rgb(var(--border)) !important;
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.10) !important;
-}
-html:not(.dark) :is(button, a).border:not(.bg-black):hover {
-  background: rgba(var(--accent), 0.08) !important;
-  border-color: rgba(var(--accent), 0.40) !important;
+  border-color: rgba(140, 171, 211, 1) !important;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.06),
+    0 1px 0 rgba(255,255,255,0.72) inset !important;
 }
 
-/* dark outline мягче */
+html:not(.dark) :is(button, a).border:not(.bg-black):hover {
+  background:
+    linear-gradient(180deg, rgba(245,250,255,1), rgba(233,244,255,0.98)) !important;
+  border-color: rgba(var(--accent), 0.40) !important;
+  box-shadow:
+    0 14px 28px rgba(59, 130, 246, 0.10),
+    0 1px 0 rgba(255,255,255,0.85) inset !important;
+  transform: translateY(-1px);
+}
+
 .dark :is(button, a).border:not(.bg-black) {
   background-color: rgba(255,255,255,0.04);
 }
 
 /* =========================
-   ✅ DISABLED В LIGHT: кнопка не должна "пропадать"
-   (у тебя disabled:opacity-60 — иногда выглядит как будто исчезла)
+   ROUNDED CHIP / PILLS / BADGES
+========================= */
+html:not(.dark) .rounded-full.border {
+  background: rgba(255,255,255,0.94);
+  border-color: rgba(146, 177, 216, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  color: rgb(var(--fg)) !important;
+}
+
+.dark .rounded-full.border {
+  color: rgb(var(--fg));
+}
+
+/* =========================
+   LIGHT HOVER HELPERS
+========================= */
+html:not(.dark) .hover\:bg-black\/5:hover {
+  background-color: rgba(79, 70, 229, 0.045) !important;
+}
+
+html:not(.dark) .hover\:bg-red-500\/10:hover {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
+html:not(.dark) .hover\:bg-white\/10:hover {
+  background-color: rgba(255,255,255,0.7) !important;
+}
+
+html:not(.dark) .dark\:hover\:bg-white\/10:hover {
+  background-color: inherit !important;
+}
+
+/* =========================
+   DISABLED
 ========================= */
 html:not(.dark) button:disabled {
-  opacity: 1 !important;                 /* не даём “исчезнуть” */
+  opacity: 1 !important;
   filter: none !important;
   transform: none !important;
 }
+
 html:not(.dark) button.bg-black.text-white:disabled {
-  background: rgba(15, 23, 42, 0.10) !important;  /* серый, но видимый */
+  background: rgba(15, 23, 42, 0.10) !important;
   color: rgba(var(--fg), 0.75) !important;
   border: 1px solid rgba(var(--border), 1) !important;
   box-shadow: none !important;
+}
+
+html:not(.dark) button.border:disabled,
+html:not(.dark) a.border[aria-disabled="true"] {
+  background: rgba(255,255,255,0.75) !important;
+  color: rgba(var(--fg), 0.55) !important;
+  border-color: rgba(var(--border), 0.85) !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   LINKS / MENUS
+========================= */
+a {
+  color: inherit;
+}
+
+html:not(.dark) .fixed.z-50.rounded-2xl.border.bg-\[rgb\(var\(--card\)\)\],
+html:not(.dark) .fixed.z-50.rounded-xl.border.bg-\[rgb\(var\(--card\)\)\] {
+  box-shadow:
+    0 26px 50px rgba(15, 23, 42, 0.14),
+    0 8px 22px rgba(59, 130, 246, 0.10) !important;
+}
+
+/* =========================
+   CARD / BOARD SPECIFIC POLISH
+========================= */
+html:not(.dark) .min-w-\[320px\].rounded-2xl.border.bg-\[rgb\(var\(--card\)\)\],
+html:not(.dark) .rounded-xl.border.p-3,
+html:not(.dark) .rounded-xl.border.p-2 {
+  border-color: rgba(140, 171, 211, 0.98) !important;
+}
+
+html:not(.dark) .rounded-xl.border.p-3:hover,
+html:not(.dark) .rounded-xl.border.p-2:hover {
+  box-shadow:
+    0 14px 28px rgba(56, 189, 248, 0.10),
+    0 5px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* =========================
+   COMMENT FIX IN LIGHT THEME
+   Фикс именно для текста комментариев
+========================= */
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 * {
+  -webkit-text-fill-color: initial;
+}
+
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 .whitespace-pre-wrap,
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 .break-words,
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 .whitespace-pre-wrap.break-words {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 .text-xs {
+  color: #475569 !important;
+}
+
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 label,
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 .underline {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+
+html:not(.dark) .border-l .overflow-auto .rounded-xl.border.p-3 a {
+  color: #0f172a !important;
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent2), 0.45) rgba(255,255,255,0.32);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.34);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(var(--accent2), 0.56), rgba(var(--accent), 0.44));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark *::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.06);
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(var(--accent2), 0.42), rgba(var(--accent), 0.36));
 }
 
 /* =========================
@@ -183,9 +487,12 @@ html:not(.dark) button.bg-black.text-white:disabled {
 }
 
 /* =========================
-   MODALS (opaque)
+   MODALS
 ========================= */
-.kpi-modal-root { animation: kpi-fade-in 150ms ease-out; }
+.kpi-modal-root {
+  animation: kpi-fade-in 150ms ease-out;
+}
+
 .kpi-modal-backdrop {
   background:
     radial-gradient(900px 600px at 20% 10%, rgba(var(--accent2), 0.22), transparent 60%),
@@ -194,6 +501,7 @@ html:not(.dark) button.bg-black.text-white:disabled {
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
+
 .kpi-modal-surface {
   background-color: rgb(var(--card)) !important;
   backdrop-filter: none !important;
@@ -201,12 +509,59 @@ html:not(.dark) button.bg-black.text-white:disabled {
   border-color: rgb(var(--border)) !important;
   animation: kpi-pop-in 170ms ease-out;
 }
+
+html:not(.dark) .kpi-modal-surface {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,1), rgba(245,250,255,0.985)) !important;
+  box-shadow:
+    0 26px 80px rgba(15, 23, 42, 0.20),
+    0 8px 28px rgba(59, 130, 246, 0.14);
+}
+
 .kpi-modal-surface::before {
   content: "";
   display: block;
   height: 3px;
-  background: linear-gradient(90deg, rgba(var(--accent),0.60), rgba(var(--accent2),0.60));
+  background: linear-gradient(90deg, rgba(var(--accent), 0.60), rgba(var(--accent2), 0.60));
 }
 
-@keyframes kpi-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes kpi-pop-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+/* =========================
+   OVERLAY / SPINNER
+========================= */
+.kpi-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid rgba(var(--border), 0.45);
+  border-top-color: rgba(var(--accent), 0.95);
+  animation: kpi-spin 0.8s linear infinite;
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+@keyframes kpi-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes kpi-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kpi-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
